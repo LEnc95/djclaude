@@ -5,6 +5,7 @@ import type { KaraokeEvent, KaraokeRequest, WSEvent } from "../types";
 import { AuraBackground } from "../components/AuraBackground";
 import { TopBar } from "../components/TopBar";
 import { Icon } from "../components/Icon";
+import { SEO } from "../components/SEO";
 
 interface Props {
   code: string;
@@ -165,6 +166,12 @@ export function Guest({ code }: Props) {
   if (eventError) {
     return (
       <div class="min-h-screen flex flex-col">
+        <SEO
+          title="Karaoke Event Not Found"
+          description="This DJClaude karaoke event could not be found."
+          canonicalPath="/"
+          noindex
+        />
         <AuraBackground />
         <TopBar />
         <main class="flex-grow flex items-center justify-center px-margin-mobile">
@@ -180,6 +187,12 @@ export function Guest({ code }: Props) {
   if (!event) {
     return (
       <div class="min-h-screen flex flex-col">
+        <SEO
+          title="Loading Karaoke Event"
+          description="Loading a private DJClaude karaoke request event."
+          canonicalPath="/"
+          noindex
+        />
         <AuraBackground />
         <TopBar />
         <main class="flex-grow flex items-center justify-center">
@@ -195,6 +208,12 @@ export function Guest({ code }: Props) {
 
   return (
     <div class="min-h-screen flex flex-col">
+      <SEO
+        title={`${event.name} Guest Requests`}
+        description={`Submit karaoke requests for ${event.name} at ${event.venue_name || "your event"}.`}
+        canonicalPath={`/r/${event.code}`}
+        noindex
+      />
       <AuraBackground />
       <TopBar brand={event.venue_name || "Neon Lounge"} />
 

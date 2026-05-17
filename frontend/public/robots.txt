@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /host/
+Disallow: /r/
+
+Sitemap: https://dj.aiandsons.io/sitemap.xml

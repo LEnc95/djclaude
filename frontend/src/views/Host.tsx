@@ -4,6 +4,7 @@ import { connectWS } from "../ws";
 import type { KaraokeEvent, KaraokeRequest, WSEvent } from "../types";
 import { Icon } from "../components/Icon";
 import { RequestQRCode } from "../components/RequestQRCode";
+import { SEO } from "../components/SEO";
 
 interface Props {
   code: string;
@@ -183,6 +184,12 @@ export function Host({ code }: Props) {
   if (!token) {
     return (
       <div class="min-h-screen flex items-center justify-center p-md">
+        <SEO
+          title="Host Dashboard Login"
+          description="Private DJClaude host dashboard."
+          canonicalPath="/"
+          noindex
+        />
         <div class="glass-panel rounded-xl p-md max-w-md text-center">
           <Icon name="lock" class="text-error text-5xl mb-sm" />
           <h2 class="font-headline-md text-headline-md text-on-surface mb-2">
@@ -200,6 +207,12 @@ export function Host({ code }: Props) {
   if (!event) {
     return (
       <div class="min-h-screen flex items-center justify-center">
+        <SEO
+          title="Connecting Host Dashboard"
+          description="Connecting to a private DJClaude karaoke host dashboard."
+          canonicalPath="/"
+          noindex
+        />
         <p class="font-body-md text-on-surface-variant">Connecting…</p>
       </div>
     );
@@ -213,6 +226,12 @@ export function Host({ code }: Props) {
       class="min-h-screen flex flex-col"
       style="background-color:#0F0F1A; background-image: radial-gradient(circle at 50% 0%, #1f1e2a 0%, #12121d 70%); background-attachment: fixed;"
     >
+      <SEO
+        title={`${event.name} Host Dashboard`}
+        description={`Private host dashboard for ${event.name} at ${event.venue_name || "your event"}.`}
+        canonicalPath={`/host/${event.code}`}
+        noindex
+      />
       {/* Top bar */}
       <header class="bg-surface/40 backdrop-blur-lg flex justify-between items-center px-gutter py-sm w-full sticky top-0 z-50 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
         <div class="flex items-center gap-sm">

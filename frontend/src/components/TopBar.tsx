@@ -17,9 +17,9 @@ export function TopBar(props: { brand?: string; right?: JSX.Element | JSX.Elemen
           fill
           class="text-primary text-2xl"
         />
-        <h1 class="font-headline-md text-headline-md font-bold tracking-tighter text-primary drop-shadow-[0_0_8px_rgba(236,177,255,0.4)]">
+        <div class="font-headline-md text-headline-md font-bold tracking-tighter text-primary drop-shadow-[0_0_8px_rgba(236,177,255,0.4)]">
           {brand}
-        </h1>
+        </div>
       </div>
       {props.right ? (
         <div class="flex items-center gap-md">{props.right}</div>

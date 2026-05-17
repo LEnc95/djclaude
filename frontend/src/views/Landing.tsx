@@ -5,6 +5,7 @@ import { AuraBackground } from "../components/AuraBackground";
 import { TopBar } from "../components/TopBar";
 import { Icon } from "../components/Icon";
 import { RequestQRCode } from "../components/RequestQRCode";
+import { SEO } from "../components/SEO";
 
 export function Landing() {
   const [name, setName] = useState("Friday Karaoke");
@@ -37,6 +38,7 @@ export function Landing() {
 
   return (
     <div class="min-h-screen flex flex-col">
+      <SEO title="DJClaude - Karaoke Request App for Bar DJs" />
       <AuraBackground />
       <TopBar />
       <main class="flex-grow flex flex-col items-center px-margin-mobile md:px-margin-desktop py-lg relative z-10">
@@ -44,11 +46,11 @@ export function Landing() {
           {created ? <CreatedPanel ev={created} /> : (
             <>
               <div class="text-center mb-md">
-                <h2 class="font-display-lg text-display-lg text-on-surface mb-xs drop-shadow-md">
-                  Spin up a karaoke night
-                </h2>
+                <h1 class="font-display-lg text-display-lg text-on-surface mb-xs drop-shadow-md">
+                  Karaoke request app for live DJ nights
+                </h1>
                 <p class="font-body-md text-body-md text-on-surface-variant">
-                  Create an event, get a guest link + a host dashboard.
+                  Create an event, share a QR guest link, and manage the song queue from a live host dashboard.
                 </p>
               </div>
               <form onSubmit={submit} class="glass-panel-strong rounded-xl p-md md:p-lg flex flex-col gap-md relative overflow-hidden">
