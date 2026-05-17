@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Guest Request - Neon Lounge</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&amp;family=JetBrains+Mono:wght@700&amp;family=Hanken+Grotesk:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#ecb1ff",
+                    "on-primary": "#520070",
+                    "secondary-fixed-dim": "#ffb1c4",
+                    "on-secondary-fixed-variant": "#8f0044",
+                    "primary-fixed": "#f9d8ff",
+                    "surface-container-highest": "#343440",
+                    "error": "#ffb4ab",
+                    "outline-variant": "#514254",
+                    "on-secondary-container": "#590028",
+                    "primary-fixed-dim": "#ecb1ff",
+                    "on-error-container": "#ffdad6",
+                    "background": "#12121d",
+                    "tertiary-fixed": "#63f7ff",
+                    "secondary-fixed": "#ffd9e1",
+                    "on-primary-fixed": "#320046",
+                    "on-secondary": "#65002e",
+                    "on-tertiary-container": "#000606",
+                    "surface": "#12121d",
+                    "surface-variant": "#343440",
+                    "surface-bright": "#383845",
+                    "surface-dim": "#12121d",
+                    "outline": "#9d8ba0",
+                    "on-primary-container": "#ffffff",
+                    "inverse-primary": "#9900ce",
+                    "on-tertiary-fixed-variant": "#004f53",
+                    "surface-container-lowest": "#0d0d18",
+                    "on-error": "#690005",
+                    "surface-container-low": "#1b1a26",
+                    "primary": "#ecb1ff",
+                    "tertiary-fixed-dim": "#00dce5",
+                    "primary-container": "#bf00ff",
+                    "surface-container": "#1f1e2a",
+                    "tertiary": "#00dce5",
+                    "secondary-container": "#ff4a8d",
+                    "on-tertiary-fixed": "#002021",
+                    "on-surface": "#e3e0f1",
+                    "on-surface-variant": "#d5c0d7",
+                    "inverse-on-surface": "#302f3b",
+                    "error-container": "#93000a",
+                    "surface-container-high": "#292935",
+                    "secondary": "#ffb1c4",
+                    "on-primary-fixed-variant": "#75009e",
+                    "on-tertiary": "#003739",
+                    "on-secondary-fixed": "#3f001a",
+                    "on-background": "#e3e0f1",
+                    "inverse-surface": "#e3e0f1",
+                    "tertiary-container": "#00848a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "gutter": "16px",
+                    "md": "24px",
+                    "base": "8px",
+                    "xs": "4px",
+                    "lg": "48px",
+                    "xl": "80px",
+                    "margin-desktop": "40px",
+                    "margin-mobile": "20px"
+            },
+            "fontFamily": {
+                    "headline-lg": [
+                            "Montserrat"
+                    ],
+                    "display-lg": [
+                            "Montserrat"
+                    ],
+                    "label-caps": [
+                            "JetBrains Mono"
+                    ],
+                    "headline-lg-mobile": [
+                            "Montserrat"
+                    ],
+                    "headline-md": [
+                            "Montserrat"
+                    ],
+                    "body-lg": [
+                            "Hanken Grotesk"
+                    ],
+                    "body-md": [
+                            "Hanken Grotesk"
+                    ]
+            },
+            "fontSize": {
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "900"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.1em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "34px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        html, body {
+            background-color: #050510;
+        }
+        body {
+            color: theme('colors.on-background');
+        }
+        
+        .neon-glow-primary {
+            box-shadow: 0 0 15px theme('colors.primary'), inset 0 0 5px theme('colors.primary');
+        }
+        
+        .neon-text-primary {
+            text-shadow: 0 0 8px rgba(236,177,255,0.6);
+        }
+
+        .glass-panel {
+            background: rgba(13, 13, 24, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Custom scrollbar for deep dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: theme('colors.surface-container-lowest');
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.surface-variant');
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.outline');
+        }
+
+        @keyframes flow1 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-3%, 4%) scale(1.05); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes flow2 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(4%, -3%) scale(0.95); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- Electric Encore Background -->
+<div class="fixed inset-0 -z-20 bg-[#050510] overflow-hidden pointer-events-none">
+<!-- Hot Pink Aura -->
+<div class="absolute top-[-10%] left-[-10%] w-[70vw] h-[70vw] bg-[#ff1493]/30 rounded-full blur-[100px] mix-blend-screen" style="animation: flow1 12s infinite ease-in-out;"></div>
+<!-- Electric Purple Aura -->
+<div class="absolute top-[20%] right-[-20%] w-[80vw] h-[80vw] bg-[#8a2be2]/30 rounded-full blur-[120px] mix-blend-screen" style="animation: flow2 18s infinite ease-in-out reverse;"></div>
+<!-- Cyan Aura -->
+<div class="absolute bottom-[-20%] left-[10%] w-[60vw] h-[60vw] bg-[#00ffff]/20 rounded-full blur-[90px] mix-blend-screen" style="animation: flow1 15s infinite ease-in-out 2s;"></div>
+<!-- Animated Stage Lighting Mesh -->
+<div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+</div>
+<!-- TopAppBar -->
+<header class="bg-surface/40 dark:bg-surface/40 backdrop-blur-lg docked full-width top-0 z-50 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] flex justify-between items-center px-gutter py-sm w-full">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed text-2xl">mic_external_on</span>
+<h1 class="font-headline-md text-headline-md-mobile md:text-headline-md font-bold tracking-tighter text-primary drop-shadow-[0_0_8px_rgba(236,177,255,0.4)]">Neon Lounge</h1>
+</div>
+<div class="h-10 w-10 rounded-full bg-surface-container overflow-hidden border border-primary/30 flex-shrink-0">
+<img alt="DJ Profile" class="w-full h-full object-cover" data-alt="A stylish portrait of a DJ in a dark club environment, illuminated by purple and blue neon lights. The DJ is wearing headphones and has an energetic, focused expression. High contrast, cyberpunk aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1411svh7jyXq3_yNDKZA97KTPmNw_zRFqRv0PEkjM1IeOTcP6PpH0ct8ghRjmfl9t-CuZlOXqxodAHFYZKnl7fSo5JkpW6w4bA0VV4b7wfB2Wtcp6idLmqZL-GnW-Y8SqhN9qxt-BlBl5AuyoS7pD9lNpda2jqYk4KAWAQS8ligiibwI7TAnBdnBDIN5yzukJpYx3b0KEAEl8HzCLNfDi79CWt_r7pizPtzt5Ilx-kd9rahvJ3mR9VvLM9RoDWdMLrDAMo0UBbTI"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col md:items-center px-margin-mobile md:px-margin-desktop py-lg relative z-10 overflow-y-auto">
+<div class="w-full max-w-2xl flex flex-col gap-md">
+<!-- Event Context -->
+<div class="text-center mb-md">
+<h2 class="font-display-lg text-display-lg text-on-surface mb-xs drop-shadow-md">Friday Karaoke</h2>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center justify-center gap-2 drop-shadow-sm">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">location_on</span>
+                    Live at Neon Lounge
+                </p>
+</div>
+<!-- Request Form Card -->
+<div class="glass-panel rounded-xl p-md md:p-lg flex flex-col gap-md relative overflow-hidden">
+<!-- Top neon accent line -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-tertiary to-secondary"></div>
+<div class="flex items-center gap-sm mb-sm border-b border-white/10 pb-sm">
+<span class="material-symbols-outlined text-primary text-3xl drop-shadow-[0_0_8px_rgba(236,177,255,0.6)]">add_circle</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Submit Request</h3>
+</div>
+<form class="flex flex-col gap-md">
+<!-- Singer Name -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-primary uppercase drop-shadow-[0_0_4px_rgba(236,177,255,0.4)]" for="singer-name">Singer Name *</label>
+<input class="w-full bg-surface-container-lowest/80 text-on-surface font-body-md text-body-md border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-4 py-3 transition-colors placeholder:text-on-surface-variant/50 backdrop-blur-md" id="singer-name" placeholder="Who is taking the stage?" required="" type="text"/>
+</div>
+<!-- Song Input (Search visually) -->
+<div class="flex flex-col gap-xs relative">
+<label class="font-label-caps text-label-caps text-tertiary uppercase drop-shadow-[0_0_4px_rgba(0,220,229,0.4)]" for="song-search">Song Title or YouTube URL *</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-lowest/80 text-on-surface font-body-md text-body-md border-0 border-b-2 border-outline-variant focus:border-tertiary focus:ring-0 pl-12 pr-4 py-3 transition-colors placeholder:text-on-surface-variant/50 backdrop-blur-md" id="song-search" placeholder="Search for a song..." required="" type="text"/>
+</div>
+<!-- Search Results Stub (Visual only) -->
+<div class="mt-2 bg-surface-container-high/90 backdrop-blur-md rounded-lg border border-white/10 overflow-hidden shadow-2xl">
+<div class="flex items-center gap-sm p-3 hover:bg-surface-variant/70 cursor-pointer transition-colors border-b border-white/5">
+<div class="w-12 h-12 bg-surface-lowest rounded overflow-hidden flex-shrink-0 relative">
+<span class="material-symbols-outlined absolute inset-0 flex items-center justify-center text-white/70">play_circle</span>
+<img alt="Album Art" class="w-full h-full object-cover opacity-80" data-alt="Abstract vibrant neon colors resembling a music album cover in a dark club setting. Deep blacks contrasting with bright magenta and cyan hues. High tech, glossy finish." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0FWJY7MSQ6Nb_0CyVGbNCk27p9v9wryTWnMMAAbFkjbdw0A2T9W5oVWrTYueVRtGtoNbcqhgW5POsAlBMSOVKl96JR_F8rPSlvCFbla1xfjCclvBKSAqLQNMCBgc2ulb9Ug2a20-QAzjdhu4wayEXtIHlpfxlJ2JunGT9M0o-IhOCwO_51_NErGL1iyODlJK21TIU_re8r76ieTHi8YccAcJXGvE_DhiSidT8ZnbWSlz0T8YkQ3M5IUkVpVkR6vmd4WK2QBTGe3Q"/>
+</div>
+<div class="flex flex-col flex-grow min-w-0">
+<span class="font-body-md text-body-md font-bold text-on-surface truncate">Mr. Brightside</span>
+<span class="font-body-sm text-sm text-on-surface-variant truncate">The Killers • Karaoke Version</span>
+</div>
+<span class="material-symbols-outlined text-tertiary drop-shadow-[0_0_8px_rgba(0,220,229,0.5)]">check_circle</span>
+</div>
+<div class="flex items-center gap-sm p-3 hover:bg-surface-variant/70 cursor-pointer transition-colors">
+<div class="w-12 h-12 bg-surface-container-lowest rounded overflow-hidden flex-shrink-0 relative">
+<span class="material-symbols-outlined absolute inset-0 flex items-center justify-center text-on-surface-variant/50">play_circle</span>
+</div>
+<div class="flex flex-col flex-grow min-w-0">
+<span class="font-body-md text-body-md font-bold text-on-surface truncate">Dancing Queen</span>
+<span class="font-body-sm text-sm text-on-surface-variant truncate">ABBA • Lyrics</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Notes -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase" for="notes">Notes (Optional)</label>
+<textarea class="w-full bg-surface-container-lowest/80 text-on-surface font-body-md text-body-md border-0 border-b-2 border-outline-variant focus:border-secondary focus:ring-0 px-4 py-3 transition-colors resize-none placeholder:text-on-surface-variant/50 backdrop-blur-md" id="notes" placeholder="e.g. Lower the key, singing with Sarah" rows="2"></textarea>
+</div>
+<!-- Submit Button -->
+<button class="mt-sm relative w-full h-14 bg-gradient-to-r from-primary-container to-secondary-container rounded-lg overflow-hidden group hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(191,0,255,0.4)] hover:shadow-[0_0_30px_rgba(191,0,255,0.7)]" type="button">
+<!-- Glass Sheen Overlay -->
+<div class="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none"></div>
+<span class="relative z-10 flex items-center justify-center gap-2 font-headline-md text-headline-md text-on-primary font-bold">
+                            Send Request
+                            <span class="material-symbols-outlined">send</span>
+</span>
+</button>
+</form>
+</div>
+<!-- Information Footer -->
+<div class="text-center mt-sm">
+<p class="font-body-md text-sm text-on-surface-variant/70 drop-shadow-sm">
+                    Your request will be sent to the DJ booth. Keep an eye on the screens!
+                </p>
+</div>
+</div>
+</main>
+<!-- Suppressed Nav Shells -->
+<!-- The BottomNavBar and NavigationDrawer are suppressed as this is a linear/transactional intent (Submitting a request on a specific event route /r/:eventCode). The Canvas is prioritized. -->
+</body></html>

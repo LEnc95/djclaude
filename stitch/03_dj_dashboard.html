@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DJ Host Dashboard - Neon Lounge</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&amp;family=JetBrains+Mono:wght@700&amp;family=Hanken+Grotesk:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#ecb1ff",
+                      "on-primary": "#520070",
+                      "secondary-fixed-dim": "#ffb1c4",
+                      "on-secondary-fixed-variant": "#8f0044",
+                      "primary-fixed": "#f9d8ff",
+                      "surface-container-highest": "#343440",
+                      "error": "#ffb4ab",
+                      "outline-variant": "#514254",
+                      "on-secondary-container": "#590028",
+                      "primary-fixed-dim": "#ecb1ff",
+                      "on-error-container": "#ffdad6",
+                      "background": "#12121d",
+                      "tertiary-fixed": "#63f7ff",
+                      "secondary-fixed": "#ffd9e1",
+                      "on-primary-fixed": "#320046",
+                      "on-secondary": "#65002e",
+                      "on-tertiary-container": "#000606",
+                      "surface": "#12121d",
+                      "surface-variant": "#343440",
+                      "surface-bright": "#383845",
+                      "surface-dim": "#12121d",
+                      "outline": "#9d8ba0",
+                      "on-primary-container": "#ffffff",
+                      "inverse-primary": "#9900ce",
+                      "on-tertiary-fixed-variant": "#004f53",
+                      "surface-container-lowest": "#0d0d18",
+                      "on-error": "#690005",
+                      "surface-container-low": "#1b1a26",
+                      "primary": "#ecb1ff",
+                      "tertiary-fixed-dim": "#00dce5",
+                      "primary-container": "#bf00ff",
+                      "surface-container": "#1f1e2a",
+                      "tertiary": "#00dce5",
+                      "secondary-container": "#ff4a8d",
+                      "on-tertiary-fixed": "#002021",
+                      "on-surface": "#e3e0f1",
+                      "on-surface-variant": "#d5c0d7",
+                      "inverse-on-surface": "#302f3b",
+                      "error-container": "#93000a",
+                      "surface-container-high": "#292935",
+                      "secondary": "#ffb1c4",
+                      "on-primary-fixed-variant": "#75009e",
+                      "on-tertiary": "#003739",
+                      "on-secondary-fixed": "#3f001a",
+                      "on-background": "#e3e0f1",
+                      "inverse-surface": "#e3e0f1",
+                      "tertiary-container": "#00848a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "12px",
+                      "gutter": "16px",
+                      "md": "24px",
+                      "base": "8px",
+                      "xs": "4px",
+                      "lg": "48px",
+                      "xl": "80px",
+                      "margin-desktop": "40px",
+                      "margin-mobile": "20px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Montserrat"
+                      ],
+                      "display-lg": [
+                              "Montserrat"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg-mobile": [
+                              "Montserrat"
+                      ],
+                      "headline-md": [
+                              "Montserrat"
+                      ],
+                      "body-lg": [
+                              "Hanken Grotesk"
+                      ],
+                      "body-md": [
+                              "Hanken Grotesk"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "34px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0F0F1A;
+            background-image: radial-gradient(circle at 50% 0%, #1f1e2a 0%, #12121d 70%);
+            background-attachment: fixed;
+            color: #e3e0f1;
+        }
+        
+        .glass-panel {
+            background: rgba(31, 30, 42, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .neon-glow-primary {
+            box-shadow: 0 0 12px rgba(236, 177, 255, 0.3);
+        }
+
+        .neon-glow-secondary {
+            box-shadow: 0 0 12px rgba(255, 177, 196, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #bf00ff, #ff4a8d);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-primary:hover::after {
+            left: 150%;
+        }
+        
+        .queue-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Custom Scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(18, 18, 29, 0.5); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(157, 139, 160, 0.5); 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(236, 177, 255, 0.5); 
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface/40 dark:bg-surface/40 backdrop-blur-lg flex justify-between items-center px-gutter py-sm w-full docked full-width top-0 z-50 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed scale-95 active:scale-90 transition-transform cursor-pointer" data-icon="mic_external_on" data-weight="fill" style="font-variation-settings: 'FILL' 1;">mic_external_on</span>
+<span class="font-headline-md text-headline-md-mobile md:text-headline-md font-bold tracking-tighter text-primary drop-shadow-[0_0_8px_rgba(236,177,255,0.4)]">Neon Lounge</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center gap-sm glass-panel rounded-full px-4 py-2 border-primary/30">
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-surface-variant checked:right-0 checked:border-primary-container checked:bg-primary" id="requests-toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-variant cursor-pointer" for="requests-toggle"></label>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Accepting Requests</span>
+</div>
+<img alt="DJ Profile Avatar" class="w-10 h-10 rounded-full border-2 border-primary cursor-pointer hover:border-secondary transition-colors" data-alt="A stylized portrait of a DJ in a neon-lit environment, highly saturated colors, cyberpunk aesthetic. The lighting should highlight the subject's face against a dark background, embodying the high-voltage energy of a night club." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCx173Iufi_jT-tSkfhSVG93cb7Uuy9syBYhPkiVmeRzYxsFj5Sh5uoE5oCPiKZvm7phuyXi7f6cMBTbtMlMLN8hb7fG1770lkK_mFNfAxWV3jeQXI4AtVKMi-Kh6ALf6n2rtlcE9T6d6C-R7ZG5be6sLdhFoqb06YVv4KbHqQNGF0mUdLVHE9Er3v8NjqPlAlcbcO8JqxlOBNxuMhkxvlZi5qS5MDzqCiwxpyJ3eK-S7RIqx_Npm1Vn1_drWH5PYvUd_2q623sZpc"/>
+</div>
+</header>
+<!-- Main Content Layout -->
+<main class="flex-grow flex flex-col md:flex-row w-full max-w-[1600px] mx-auto p-4 md:p-gutter gap-md h-[calc(100vh-80px)] overflow-hidden">
+<!-- NavigationDrawer (Sidebar) -->
+<aside class="hidden md:flex flex-col h-full w-64 bg-surface-container dark:bg-surface-container rounded-r-2xl border-r border-primary/20 shadow-2xl shadow-primary/10 py-md flex-shrink-0">
+<!-- Profile Header -->
+<div class="px-6 pb-6 border-b border-white/10 mb-4">
+<div class="flex items-center gap-sm mb-2">
+<img alt="User Avatar" class="w-12 h-12 rounded-full border-2 border-primary" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDK06r7GIGmroxFKnVsDdKj8DCootgN-BK8FG9ctDJLozmf36LZZp0ZAsUCV2T86fED9T0msUFAzcbelIvUb86ih6TudlDYui6QpF85pka-MAogN9CqjtrOhA1DH9Ep8Xs1CAgN0uvaQmER3nvQxIx88urjr9ynL7kcGtHDdeH6qAmpVb9CFhh48Fh2N9pSSm4sesYeu2lxlBncwR3qO8GReQbspJJRX8mYmAiSUMt_S4xVo6Xesms91Nab6qqJ7HlY4FSJSREKX4U"/>
+<div>
+<h2 class="font-headline-md text-headline-md text-primary">DJ Profile</h2>
+<p class="font-label-caps text-label-caps text-on-surface-variant">VIP Tier</p>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">3 Songs Today</p>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 flex flex-col gap-1 overflow-y-auto tap-highlight-transparent">
+<a class="flex items-center gap-md text-on-surface-variant px-6 py-4 hover:bg-surface-variant/30 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-6 py-4 hover:bg-surface-variant/30 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="library_music">library_music</span>
+<span class="font-label-caps text-label-caps">Song Book</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-6 py-4 hover:bg-surface-variant/30 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="emoji_events">emoji_events</span>
+<span class="font-label-caps text-label-caps">Leaderboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-6 py-4 hover:bg-surface-variant/30 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-label-caps text-label-caps">Venue Map</span>
+</a>
+<!-- DJ Deck active -->
+<a class="flex items-center gap-md bg-primary-container/20 text-primary border-l-4 border-primary px-6 py-4 mt-auto" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard_customize">dashboard_customize</span>
+<span class="font-label-caps text-label-caps font-bold">DJ Deck</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-6 py-4 hover:bg-surface-variant/30 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</nav>
+</aside>
+<!-- DJ Dashboard Content Area (Bento Grid Style) -->
+<div class="flex-grow grid grid-cols-1 md:grid-cols-12 gap-md overflow-y-auto md:overflow-hidden pb-24 md:pb-0">
+<!-- Center Column (Hero & Queue) -->
+<div class="md:col-span-8 flex flex-col gap-md h-full">
+<!-- Now Singing Hero Card -->
+<section class="glass-panel rounded-xl p-md flex flex-col relative overflow-hidden border-primary/50 neon-glow-primary shrink-0">
+<div class="absolute inset-0 bg-gradient-to-br from-primary-container/20 to-transparent pointer-events-none"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<div>
+<span class="font-label-caps text-label-caps text-secondary mb-1 block animate-pulse">● NOW SINGING</span>
+<h1 class="font-display-lg text-display-lg text-on-primary-container line-clamp-1">Bohemian Rhapsody</h1>
+<p class="font-headline-md text-headline-md text-primary-fixed-dim">Queen</p>
+</div>
+<div class="bg-surface-container rounded-lg p-2 text-center border border-white/10">
+<span class="block font-label-caps text-label-caps text-on-surface-variant">SINGER</span>
+<span class="font-headline-md text-headline-md text-tertiary">Alex M.</span>
+</div>
+</div>
+<div class="flex gap-sm mt-auto relative z-10 pt-4 border-t border-white/10">
+<button class="btn-primary font-label-caps text-label-caps text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+                            Done
+                        </button>
+<button class="bg-transparent border-2 border-secondary text-secondary font-label-caps text-label-caps px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-secondary/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">skip_next</span>
+                            Skip
+                        </button>
+<button class="ml-auto bg-surface-variant text-on-surface font-label-caps text-label-caps px-4 py-3 rounded-lg flex items-center gap-2 hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-[18px]">smart_display</span>
+                            Open YouTube
+                        </button>
+</div>
+</section>
+<!-- Up Next Queue -->
+<section class="glass-panel rounded-xl flex flex-col flex-grow overflow-hidden">
+<div class="p-4 border-b border-white/10 flex justify-between items-center bg-surface-container/50">
+<h2 class="font-headline-md text-headline-md text-on-surface">Up Next</h2>
+<span class="font-label-caps text-label-caps text-on-surface-variant bg-surface-variant px-3 py-1 rounded-full">45 min Wait</span>
+</div>
+<div class="flex-grow overflow-y-auto p-2 space-y-2">
+<!-- Queue Items -->
+<div class="queue-item flex items-center gap-4 p-3 rounded-lg transition-colors cursor-grab active:cursor-grabbing border border-transparent hover:border-white/10 group">
+<span class="material-symbols-outlined text-on-surface-variant opacity-50 group-hover:opacity-100">drag_indicator</span>
+<div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center font-label-caps text-label-caps text-primary">01</div>
+<div class="flex-grow">
+<h3 class="font-body-lg text-body-lg font-bold text-on-surface">I Will Survive</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Gloria Gaynor</p>
+</div>
+<div class="text-right">
+<span class="block font-label-caps text-label-caps text-secondary-fixed">Sarah T.</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-50">~3 mins</span>
+</div>
+<button class="p-2 text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined">delete</span></button>
+</div>
+<div class="queue-item flex items-center gap-4 p-3 rounded-lg transition-colors cursor-grab active:cursor-grabbing border border-transparent hover:border-white/10 group">
+<span class="material-symbols-outlined text-on-surface-variant opacity-50 group-hover:opacity-100">drag_indicator</span>
+<div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center font-label-caps text-label-caps text-primary">02</div>
+<div class="flex-grow">
+<h3 class="font-body-lg text-body-lg font-bold text-on-surface">Mr. Brightside</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">The Killers</p>
+</div>
+<div class="text-right">
+<span class="block font-label-caps text-label-caps text-secondary-fixed">The Boys</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-50">~7 mins</span>
+</div>
+<button class="p-2 text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined">delete</span></button>
+</div>
+<div class="queue-item flex items-center gap-4 p-3 rounded-lg transition-colors cursor-grab active:cursor-grabbing border border-transparent hover:border-white/10 group">
+<span class="material-symbols-outlined text-on-surface-variant opacity-50 group-hover:opacity-100">drag_indicator</span>
+<div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center font-label-caps text-label-caps text-primary">03</div>
+<div class="flex-grow">
+<h3 class="font-body-lg text-body-lg font-bold text-on-surface">Don't Stop Believin'</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Journey</p>
+</div>
+<div class="text-right">
+<span class="block font-label-caps text-label-caps text-secondary-fixed">Mike R.</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-50">~11 mins</span>
+</div>
+<button class="p-2 text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined">delete</span></button>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column (Requests & Stats) -->
+<div class="md:col-span-4 flex flex-col gap-md h-full">
+<!-- Stats Overview -->
+<section class="grid grid-cols-2 gap-sm shrink-0">
+<div class="glass-panel rounded-xl p-4 flex flex-col items-center justify-center text-center">
+<span class="font-display-lg text-display-lg text-tertiary">12</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-1">SINGERS</span>
+</div>
+<div class="glass-panel rounded-xl p-4 flex flex-col items-center justify-center text-center">
+<span class="font-display-lg text-display-lg text-primary">24</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-1">SONGS DONE</span>
+</div>
+</section>
+<!-- New Requests Column -->
+<section class="glass-panel rounded-xl flex flex-col flex-grow overflow-hidden border-secondary/30">
+<div class="p-4 border-b border-white/10 flex justify-between items-center bg-surface-container/50">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Requests</h2>
+<span class="flex h-3 w-3 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-secondary"></span>
+</span>
+</div>
+</div>
+<div class="flex-grow overflow-y-auto p-2 space-y-2">
+<!-- Request Cards -->
+<div class="bg-surface-container border border-secondary/20 p-3 rounded-lg neon-glow-secondary">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-body-lg text-body-lg font-bold text-on-surface">Toxic</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Britney Spears</p>
+</div>
+<span class="font-label-caps text-label-caps text-secondary bg-secondary/10 px-2 py-1 rounded">VIP</span>
+</div>
+<div class="flex justify-between items-center mt-3">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Req by: Emma</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded bg-error/20 text-error flex items-center justify-center hover:bg-error/40 transition-colors"><span class="material-symbols-outlined text-[18px]">close</span></button>
+<button class="w-8 h-8 rounded bg-secondary/20 text-secondary flex items-center justify-center hover:bg-secondary/40 transition-colors"><span class="material-symbols-outlined text-[18px]">check</span></button>
+</div>
+</div>
+</div>
+<div class="bg-surface-container border border-white/5 p-3 rounded-lg hover:border-white/20 transition-colors">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-body-lg text-body-lg font-bold text-on-surface">Wonderwall</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Oasis</p>
+</div>
+</div>
+<div class="flex justify-between items-center mt-3">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Req by: Dave</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded bg-error/20 text-error flex items-center justify-center hover:bg-error/40 transition-colors"><span class="material-symbols-outlined text-[18px]">close</span></button>
+<button class="w-8 h-8 rounded bg-secondary/20 text-secondary flex items-center justify-center hover:bg-secondary/40 transition-colors"><span class="material-symbols-outlined text-[18px]">check</span></button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface/60 dark:bg-surface/60 backdrop-blur-xl fixed bottom-0 w-full rounded-t-xl z-50 border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] flex justify-around items-center h-20 px-4 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-secondary transition-all active:scale-110 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="search">search</span>
+<span class="font-label-caps text-label-caps">Browse</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-secondary transition-all active:scale-110 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="music_note">music_note</span>
+<span class="font-label-caps text-label-caps">My Song</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-secondary transition-all active:scale-110 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="format_list_numbered">format_list_numbered</span>
+<span class="font-label-caps text-label-caps">Queue</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold drop-shadow-[0_0_5px_rgba(236,177,255,0.6)] hover:text-secondary transition-all active:scale-110 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard_customize">dashboard_customize</span>
+<span class="font-label-caps text-label-caps">DJ Deck</span>
+</a>
+</nav>
+</body></html>

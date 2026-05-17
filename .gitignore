@@ -1,0 +1,10 @@
+node_modules/
+dist/
+frontend/dist/
+*.db
+*.db-wal
+*.db-shm
+djclaude
+djclaude.exe
+.env
+.DS_Store

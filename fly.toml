@@ -1,0 +1,54 @@
+# Fly.io config for DJClaude — single Go binary serving REST + WebSocket + SPA.
+# Custom domain expected: dj.aiandsons.io
+#
+# After `fly launch --no-deploy` once:
+#   fly volumes create data --size 1 --region iad
+#   fly deploy
+#   fly certs add dj.aiandsons.io
+#   (then add the CNAME / A records that `fly certs show` prints)
+app = "djclaude"
+primary_region = "iad"  # change to whichever is closest (e.g. "lax", "ord", "sjc")
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ADDR = ":8080"
+  DATABASE_PATH = "/data/karaoke.db"
+  STATIC_DIR = "/app/frontend/dist"
+  BASE_URL = "https://dj.aiandsons.io"
+  PER_SINGER_LIMIT = "2"
+  AUTO_ACCEPT = "true"
+
+# Persistent disk for SQLite. Fly mounts this before the process starts.
+[[mounts]]
+  source = "data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"     # park the VM after idle to save credits
+  auto_start_machines = true
+  min_machines_running = 0        # 0 lets it scale to zero between events
+  processes = ["app"]
+
+  # The Go server speaks HTTP/1.1 with Upgrade: websocket — Fly handles this
+  # transparently. We just need to allow Connection/Upgrade headers (which
+  # the default http_service does).
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpus = 1

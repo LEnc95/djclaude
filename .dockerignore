@@ -1,0 +1,20 @@
+# Don't ship build outputs / local junk into the build context
+node_modules
+frontend/node_modules
+frontend/dist
+backend/.cache
+*.db
+*.db-wal
+*.db-shm
+djclaude
+djclaude.exe
+.git
+.gitignore
+.idea
+.vscode
+.claude
+.DS_Store
+stitch
+README.md
+DEPLOY.md
+Makefile

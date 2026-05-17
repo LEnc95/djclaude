@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neon Lounge - Guest Queue</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&amp;family=JetBrains+Mono:wght@700&amp;family=Hanken+Grotesk:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#ecb1ff",
+                        "on-primary": "#520070",
+                        "secondary-fixed-dim": "#ffb1c4",
+                        "on-secondary-fixed-variant": "#8f0044",
+                        "primary-fixed": "#f9d8ff",
+                        "surface-container-highest": "#343440",
+                        "error": "#ffb4ab",
+                        "outline-variant": "#514254",
+                        "on-secondary-container": "#590028",
+                        "primary-fixed-dim": "#ecb1ff",
+                        "on-error-container": "#ffdad6",
+                        "background": "#12121d",
+                        "tertiary-fixed": "#63f7ff",
+                        "secondary-fixed": "#ffd9e1",
+                        "on-primary-fixed": "#320046",
+                        "on-secondary": "#65002e",
+                        "on-tertiary-container": "#000606",
+                        "surface": "#12121d",
+                        "surface-variant": "#343440",
+                        "surface-bright": "#383845",
+                        "surface-dim": "#12121d",
+                        "outline": "#9d8ba0",
+                        "on-primary-container": "#ffffff",
+                        "inverse-primary": "#9900ce",
+                        "on-tertiary-fixed-variant": "#004f53",
+                        "surface-container-lowest": "#0d0d18",
+                        "on-error": "#690005",
+                        "surface-container-low": "#1b1a26",
+                        "primary": "#ecb1ff",
+                        "tertiary-fixed-dim": "#00dce5",
+                        "primary-container": "#bf00ff",
+                        "surface-container": "#1f1e2a",
+                        "tertiary": "#00dce5",
+                        "secondary-container": "#ff4a8d",
+                        "on-tertiary-fixed": "#002021",
+                        "on-surface": "#e3e0f1",
+                        "on-surface-variant": "#d5c0d7",
+                        "inverse-on-surface": "#302f3b",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#292935",
+                        "secondary": "#ffb1c4",
+                        "on-primary-fixed-variant": "#75009e",
+                        "on-tertiary": "#003739",
+                        "on-secondary-fixed": "#3f001a",
+                        "on-background": "#e3e0f1",
+                        "inverse-surface": "#e3e0f1",
+                        "tertiary-container": "#00848a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "gutter": "16px",
+                        "md": "24px",
+                        "base": "8px",
+                        "xs": "4px",
+                        "lg": "48px",
+                        "xl": "80px",
+                        "margin-desktop": "40px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Montserrat"],
+                        "display-lg": ["Montserrat"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Montserrat"],
+                        "headline-md": ["Montserrat"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .neon-glow-primary { box-shadow: 0 0 12px rgba(236, 177, 255, 0.3); }
+        .neon-glow-secondary { box-shadow: 0 0 12px rgba(255, 177, 196, 0.3); }
+        .neon-text-glow { text-shadow: 0 0 8px rgba(236, 177, 255, 0.5); }
+        
+        .pulse-border {
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0% { border-color: rgba(236, 177, 255, 0.5); box-shadow: 0 0 10px rgba(236, 177, 255, 0.2); }
+            50% { border-color: rgba(236, 177, 255, 1); box-shadow: 0 0 20px rgba(236, 177, 255, 0.6); }
+            100% { border-color: rgba(236, 177, 255, 0.5); box-shadow: 0 0 10px rgba(236, 177, 255, 0.2); }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:flex-row overflow-x-hidden antialiased">
+<!-- TopAppBar (Web/Desktop) -->
+<header class="hidden md:flex flex justify-between items-center px-gutter py-sm w-full bg-surface/40 dark:bg-surface/40 backdrop-blur-lg docked full-width top-0 z-50 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] fixed">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed" style="font-variation-settings: 'FILL' 1;">mic_external_on</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tighter text-primary drop-shadow-[0_0_8px_rgba(236,177,255,0.4)]">Neon Lounge</h1>
+</div>
+<div class="flex gap-md font-headline-md text-headline-md-mobile md:text-headline-md">
+<!-- Nav hidden on focused queue screen -->
+</div>
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-white/10">
+<img alt="DJ Profile" class="w-full h-full object-cover" data-alt="A close-up portrait of a DJ wearing headphones in a dark, neon-lit club setting. The lighting is dominated by deep purples and blues with sharp magenta accents, creating a high-energy nightlife mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPw1kmsgbuwTJN4AZJvbsgqyAONfEbT36uqBL0O7WKE9A0k3MAugbRLDo6KLJsHeVSOxMH-DBgd7DMpnOfFORdWr0_pgBM0aL0HJqlnXZju78KUR3m-5RTgCOeotwTSU3zsK9Wb5uGqQcqiOFrygjJuwKqGT7QodHdjbsxkSOY-6O4LhbWHAR8TKTlJfMJzwIIHkf2r2VvB8eS6SX_v6-DHcvuFPQSOklBX5WtCwOE34uQANGh3k5uJBkgKxSjlo7imTQa4i99sK0"/>
+</div>
+</div>
+</header>
+<!-- TopAppBar (Mobile) -->
+<header class="md:hidden flex justify-between items-center px-gutter py-sm w-full bg-surface/40 dark:bg-surface/40 backdrop-blur-lg docked full-width top-0 z-50 shadow-[0_4px_30px_rgba(0,0,0,0.1)] fixed">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed" style="font-variation-settings: 'FILL' 1;">mic_external_on</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tighter text-primary drop-shadow-[0_0_8px_rgba(236,177,255,0.4)]">Neon Lounge</h1>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 w-full max-w-4xl mx-auto pt-24 pb-32 md:pt-32 px-margin-mobile md:px-margin-desktop flex flex-col gap-lg">
+<!-- Queue Status Hero -->
+<section class="flex flex-col items-center text-center gap-md">
+<div class="w-24 h-24 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center pulse-border mb-sm">
+<span class="material-symbols-outlined text-primary text-5xl" style="font-variation-settings: 'FILL' 1;">hourglass_top</span>
+</div>
+<h2 class="font-display-lg text-display-lg text-on-background neon-text-glow">You're in the Queue!</h2>
+<div class="bg-surface-variant/40 backdrop-blur-md rounded-xl p-md border border-white/10 inline-flex flex-col items-center gap-sm min-w-[280px]">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Current Position</span>
+<span class="font-display-lg text-display-lg text-secondary">#4</span>
+<div class="flex items-center gap-xs mt-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-body-md text-body-md text-tertiary">Accepted - DJ is reviewing</span>
+</div>
+</div>
+</section>
+<!-- Bento Grid: Request & Live Look -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- My Request Summary -->
+<div class="bg-surface/40 backdrop-blur-lg rounded-xl border border-white/10 p-md flex flex-col gap-md relative overflow-hidden">
+<div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">person_play</span>
+                    Your Request
+                </h3>
+<div class="bg-surface-container-highest/50 rounded-lg p-sm flex items-center gap-md border border-white/5">
+<div class="w-16 h-16 rounded-md overflow-hidden bg-surface-variant shrink-0">
+<img alt="Album Art" class="w-full h-full object-cover" data-alt="Abstract vibrant album cover art featuring neon glowing waves against a deep dark background. The scene is illuminated by striking magenta and cyan light, perfect for a modern karaoke lounge interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA68BJSrtOPO0YJAF9-huVUD7QvH8xl2a7Qaj1ki0y9KvzCSKa-ZAb89C1ljm7DHNnUuWXHquewhMuYJUlSMvDAd9r7St_61l_Bva9n4hxsM7pROsNiJl-v7lMMdNsWNFmGddN8K-Y-Mrbi5UY5mgQTw2oy3QFjhX5zJ4_tD8DVcrU2FLrxspe6bFrCKE4mdKdyAsfssTkZbSHI0iudQpbWlDS0Gj0MjdDPnbz2gCTV9vtYY3ZtWVIkuP3dHEU7tYJTfklp1DX0rao"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md text-on-background line-clamp-1">Midnight City</span>
+<span class="font-body-md text-body-md text-on-surface-variant">M83</span>
+</div>
+</div>
+<div class="flex justify-between items-center mt-auto pt-sm border-t border-white/5">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Requested by</span>
+<span class="font-body-md text-body-md text-on-surface">Alex (Table 4)</span>
+</div>
+</div>
+<!-- Live Look: Stage -->
+<div class="bg-surface/40 backdrop-blur-lg rounded-xl border border-white/10 p-md flex flex-col gap-md relative overflow-hidden">
+<div class="absolute -top-10 -left-10 w-32 h-32 bg-secondary/10 rounded-full blur-3xl"></div>
+<div class="flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary">mic</span>
+                        On Stage Now
+                    </h3>
+<span class="px-2 py-1 rounded bg-error/20 text-error font-label-caps text-[10px] animate-pulse">LIVE</span>
+</div>
+<div class="flex flex-col gap-sm">
+<!-- Current Singer -->
+<div class="bg-surface-container-highest/80 rounded-lg p-sm flex items-center gap-md border border-secondary/30 neon-glow-secondary">
+<div class="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary">music_note</span>
+</div>
+<div class="flex flex-col flex-1">
+<span class="font-body-md text-body-md font-bold text-on-background">Sarah J.</span>
+<span class="font-body-md text-[14px] text-on-surface-variant">Dancing Queen</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-50">graphic_eq</span>
+</div>
+<!-- Coming Up -->
+<div class="pl-md border-l-2 border-white/10 flex flex-col gap-xs mt-xs">
+<span class="font-label-caps text-[10px] text-on-surface-variant uppercase">Up Next</span>
+<div class="flex justify-between items-center">
+<span class="font-body-md text-[14px] text-on-surface">Mike T. - Mr. Brightside</span>
+<span class="font-label-caps text-[10px] text-on-surface-variant">#2</span>
+</div>
+<div class="flex justify-between items-center opacity-70">
+<span class="font-body-md text-[14px] text-on-surface">Elena - Toxic</span>
+<span class="font-label-caps text-[10px] text-on-surface-variant">#3</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Actions -->
+<div class="flex justify-center mt-md">
+<button class="bg-surface/40 hover:bg-surface-variant/60 border border-primary/50 text-primary font-label-caps text-label-caps px-md py-sm rounded-full flex items-center gap-xs transition-colors backdrop-blur-md">
+<span class="material-symbols-outlined text-[18px]">cancel</span>
+                Cancel Request
+            </button>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden flex justify-around items-center h-20 px-4 pb-safe bg-surface/60 dark:bg-surface/60 backdrop-blur-xl fixed bottom-0 w-full rounded-t-xl z-50 border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
+<button class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-secondary transition-all active:scale-110 duration-200">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-caps text-[10px] mt-1">Browse</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-secondary transition-all active:scale-110 duration-200">
+<span class="material-symbols-outlined">music_note</span>
+<span class="font-label-caps text-[10px] mt-1">My Song</span>
+</button>
+<!-- Active Tab -->
+<button class="flex flex-col items-center justify-center text-primary font-bold drop-shadow-[0_0_5px_rgba(236,177,255,0.6)] active:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">format_list_numbered</span>
+<span class="font-label-caps text-[10px] mt-1">Queue</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-secondary transition-all active:scale-110 duration-200">
+<span class="material-symbols-outlined">dashboard_customize</span>
+<span class="font-label-caps text-[10px] mt-1">DJ Deck</span>
+</button>
+</nav>
+</body></html>
