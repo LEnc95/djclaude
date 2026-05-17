@@ -52,9 +52,9 @@ npm run dev
 ```
 
 Open `http://localhost:5173`. The landing page lets you create an event;
-you'll get a guest link (`/r/CODE`) and a host link (`/host/CODE?token=…`).
-The host token is also stored in `localStorage`, so you only need the link
-once.
+you'll get a guest link (`/r/CODE`), a printable QR code, and a host link
+(`/host/CODE?token=…`). The host token is also stored in `localStorage`, so you
+only need the link once.
 
 ## Deploying to Fly.io (production)
 
@@ -164,7 +164,6 @@ the DJ sees a "duplicate" badge.
 - Real YouTube search (Data API) with title autofill.
 - Drag-and-drop reorder.
 - Tip-priority lanes / multi-venue.
-- QR code rendering endpoint (`/qr/:code`).
 - Pending-reason audit log.
 
 ## License

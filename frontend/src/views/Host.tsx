@@ -3,6 +3,7 @@ import { api } from "../api";
 import { connectWS } from "../ws";
 import type { KaraokeEvent, KaraokeRequest, WSEvent } from "../types";
 import { Icon } from "../components/Icon";
+import { RequestQRCode } from "../components/RequestQRCode";
 
 interface Props {
   code: string;
@@ -34,6 +35,7 @@ export function Host({ code }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [conn, setConn] = useState<"connecting" | "open" | "closed">("connecting");
   const [activeTab, setActiveTab] = useState<"deck" | "requests">("deck");
+  const [qrOpen, setQrOpen] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -204,6 +206,7 @@ export function Host({ code }: Props) {
   }
 
   const eventActive = event.status === "active";
+  const guestURL = `${location.origin}/r/${event.code}`;
 
   return (
     <div
@@ -219,6 +222,18 @@ export function Host({ code }: Props) {
           </span>
         </div>
         <div class="flex items-center gap-md">
+          <button
+            type="button"
+            onClick={() => setQrOpen(true)}
+            class="h-10 px-3 rounded-lg bg-tertiary/10 border border-tertiary/40 text-tertiary flex items-center justify-center gap-2 hover:bg-tertiary/20 transition-colors"
+            aria-label="Show guest QR"
+            title="Show guest QR"
+          >
+            <Icon name="qr_code_2" class="text-[20px]" />
+            <span class="hidden sm:inline font-label-caps text-label-caps">
+              Guest QR
+            </span>
+          </button>
           <div class="hidden md:flex items-center gap-sm glass-panel rounded-full px-4 py-2 border-primary/30">
             <Toggle
               on={event.accepting_requests}
@@ -571,6 +586,37 @@ export function Host({ code }: Props) {
       {error && (
         <div class="fixed bottom-24 md:bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-error-container/80 border border-error/40 text-error px-4 py-2 font-body-md">
           {error}
+        </div>
+      )}
+
+      {qrOpen && (
+        <div
+          class="fixed inset-0 z-[80] bg-black/80 backdrop-blur-md p-md flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Guest request QR code"
+          onClick={() => setQrOpen(false)}
+        >
+          <div class="w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
+            <div class="flex justify-end mb-sm">
+              <button
+                type="button"
+                onClick={() => setQrOpen(false)}
+                class="w-10 h-10 rounded-full bg-surface-container text-on-surface flex items-center justify-center border border-white/10 hover:bg-surface-variant transition-colors"
+                aria-label="Close QR"
+                title="Close QR"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <RequestQRCode
+              guestURL={guestURL}
+              eventName={event.name}
+              venueName={event.venue_name}
+              code={event.code}
+              large
+            />
+          </div>
         </div>
       )}
 

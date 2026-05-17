@@ -4,6 +4,7 @@ import type { KaraokeEvent } from "../types";
 import { AuraBackground } from "../components/AuraBackground";
 import { TopBar } from "../components/TopBar";
 import { Icon } from "../components/Icon";
+import { RequestQRCode } from "../components/RequestQRCode";
 
 export function Landing() {
   const [name, setName] = useState("Friday Karaoke");
@@ -183,7 +184,14 @@ function CreatedPanel({ ev }: { ev: KaraokeEvent }) {
         </span>
       </div>
 
-      <UrlField label="Guest link · put this behind the QR" url={guestURL} accent="tertiary" />
+      <RequestQRCode
+        guestURL={guestURL}
+        eventName={ev.name}
+        venueName={ev.venue_name}
+        code={ev.code}
+      />
+
+      <UrlField label="Guest link" url={guestURL} accent="tertiary" />
       <UrlField label="Host link · keep this secret" url={hostURL} accent="primary" />
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-sm mt-sm">
