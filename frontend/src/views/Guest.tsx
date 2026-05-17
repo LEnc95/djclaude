@@ -349,13 +349,13 @@ function SubmitForm(props: {
             />
             <input
               class="neon-input tertiary pl-12"
-              type="url"
+              type="text"
               required
-              placeholder="https://www.youtube.com/watch?v=..."
+              placeholder="Song name or https://youtube.com/..."
               value={song}
               onInput={(e) => setSong((e.target as HTMLInputElement).value)}
               autoComplete="off"
-              spellcheck={false}
+              spellcheck={true}
             />
           </div>
         </Field>

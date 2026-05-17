@@ -1,9 +1,9 @@
 # DJClaude — Bar Karaoke Requests
 
 A minimal, self-hostable karaoke request app for a bar DJ. Guests scan a QR
-code, submit a YouTube link + singer name; the DJ runs a real-time dashboard
-to manage the queue and plays the songs manually from YouTube. No audio is
-downloaded, no playback is automated — we only store URLs and metadata.
+code, submit a song title or YouTube link + singer name; the DJ runs a
+real-time dashboard to manage the queue and plays the songs manually. No audio
+is downloaded, no playback is automated — we only store request metadata.
 
 ## Architecture
 
@@ -122,7 +122,7 @@ All bodies are JSON. Host-only routes require `X-Host-Token` header.
 | `GET` | `/api/events/:code` | optional host | Event info. Host token reveals the token. |
 | `PATCH` | `/api/events/:code` | host | Update status / accepting / auto-accept / limits / names. |
 | `GET` | `/api/events/:code/requests?status=accepted,singing` | optional host | List requests. Guests see live queue by default. |
-| `POST` | `/api/events/:code/requests` | — | Submit a request (singer_name + song_input + notes). |
+| `POST` | `/api/events/:code/requests` | — | Submit a request (singer_name + song_input title or YouTube URL + notes). |
 | `PATCH` | `/api/events/:code/requests/:id` | host | Update status / song / notes / manual_order. |
 | `DELETE` | `/api/events/:code/requests/:id` | host | Delete. |
 | `GET` | `/ws/:code[?host_token=…]` | optional host | WebSocket: `snapshot` + change events. |

@@ -108,7 +108,8 @@ Open https://vercel.com/new in a browser logged into your Vercel team
 
 Vercel will read `vercel.json` from the repo automatically:
 
-- Build command: `cd frontend && npm install && npm run build`
+- Install command: `cd frontend && npm ci`
+- Build command: `cd frontend && npm run build`
 - Output directory: `frontend/dist`
 - SPA rewrite rule for `/r/:code`, `/host/:code`, etc.
 
@@ -161,7 +162,7 @@ TOKEN=$(echo "$EV" | jq -r .host_token)
 # Submit a request
 curl -s -X POST "https://api.dj.aiandsons.io/api/events/$CODE/requests" \
   -H 'content-type: application/json' \
-  -d '{"singer_name":"Alex","song_input":"https://www.youtube.com/watch?v=dQw4w9WgXcQ"}' | jq .
+  -d '{"singer_name":"Alex","song_input":"Mr. Brightside"}' | jq .
 
 # Open the SPA, both URLs should work:
 echo "https://dj.aiandsons.io/r/$CODE"

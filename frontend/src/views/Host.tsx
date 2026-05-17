@@ -313,7 +313,7 @@ export function Host({ code }: Props) {
                         {singing.song_title || "Untitled"}
                       </h1>
                       <p class="font-headline-md text-headline-md text-primary-fixed-dim truncate">
-                        {singing.youtube_url}
+                        {singing.youtube_url || "Song name only"}
                       </p>
                       {singing.notes && (
                         <p class="font-body-md text-body-md text-on-surface-variant italic mt-1">
@@ -352,20 +352,24 @@ export function Host({ code }: Props) {
                       <Icon name="undo" class="text-[18px]" />
                       Back to queue
                     </button>
-                    <button
-                      class="ml-auto bg-surface-variant text-on-surface font-label-caps text-label-caps px-4 py-3 rounded-lg flex items-center gap-2 hover:bg-surface-bright transition-colors"
-                      onClick={() => openYouTube(singing)}
-                    >
-                      <Icon name="smart_display" class="text-[18px]" />
-                      Open YouTube
-                    </button>
-                    <button
-                      class="bg-surface-variant text-on-surface font-label-caps text-label-caps px-4 py-3 rounded-lg flex items-center gap-2 hover:bg-surface-bright transition-colors"
-                      onClick={() => copyUrl(singing)}
-                    >
-                      <Icon name="content_copy" class="text-[18px]" />
-                      Copy URL
-                    </button>
+                    {singing.youtube_url && (
+                      <>
+                        <button
+                          class="ml-auto bg-surface-variant text-on-surface font-label-caps text-label-caps px-4 py-3 rounded-lg flex items-center gap-2 hover:bg-surface-bright transition-colors"
+                          onClick={() => openYouTube(singing)}
+                        >
+                          <Icon name="smart_display" class="text-[18px]" />
+                          Open YouTube
+                        </button>
+                        <button
+                          class="bg-surface-variant text-on-surface font-label-caps text-label-caps px-4 py-3 rounded-lg flex items-center gap-2 hover:bg-surface-bright transition-colors"
+                          onClick={() => copyUrl(singing)}
+                        >
+                          <Icon name="content_copy" class="text-[18px]" />
+                          Copy URL
+                        </button>
+                      </>
+                    )}
                   </div>
                 </>
               ) : (
@@ -413,7 +417,7 @@ export function Host({ code }: Props) {
                           {r.song_title || r.youtube_url}
                         </h3>
                         <p class="font-body-md text-body-md text-on-surface-variant truncate">
-                          {r.notes ? `“${r.notes}”` : r.youtube_video_id || "—"}
+                          {r.notes ? `“${r.notes}”` : r.youtube_video_id || "Song name only"}
                         </p>
                       </div>
                       <div class="text-right shrink-0 hidden sm:block">
@@ -518,7 +522,7 @@ export function Host({ code }: Props) {
                             {r.song_title || r.youtube_url}
                           </h4>
                           <p class="font-body-md text-body-md text-on-surface-variant truncate">
-                            {r.youtube_video_id || "—"}
+                            {r.youtube_video_id || "Song name only"}
                           </p>
                         </div>
                         {r.is_duplicate && (

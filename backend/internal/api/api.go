@@ -263,11 +263,7 @@ func (s *Server) createRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	videoID := youtube.ParseVideoID(req.SongInput)
-	url := req.SongInput
-	if videoID != "" {
-		url = youtube.WatchURL(videoID)
-	}
+	url, videoID, songTitle := normalizeRequestSong(req.SongInput, req.SongTitle)
 
 	dup, err := s.store.FindDuplicate(r.Context(), ev.ID, videoID)
 	if err != nil {
@@ -287,7 +283,7 @@ func (s *Server) createRequest(w http.ResponseWriter, r *http.Request) {
 		SingerName:     req.SingerName,
 		YoutubeURL:     url,
 		YoutubeVideoID: videoID,
-		SongTitle:      req.SongTitle,
+		SongTitle:      songTitle,
 		Notes:          req.Notes,
 		Status:         status,
 		IsDuplicate:    dup,
@@ -469,6 +465,20 @@ func (s *Server) isHost(r *http.Request, ev models.Event) bool {
 	return tok != "" && tok == ev.HostToken
 }
 
+func normalizeRequestSong(input, title string) (url, videoID, songTitle string) {
+	input = strings.TrimSpace(input)
+	songTitle = strings.TrimSpace(title)
+
+	videoID = youtube.ParseVideoID(input)
+	if videoID != "" {
+		return youtube.WatchURL(videoID), videoID, songTitle
+	}
+	if songTitle == "" {
+		songTitle = input
+	}
+	return "", "", songTitle
+}
+
 func parseStatuses(s string) []models.RequestStatus {
 	if s == "" {
 		return nil
@@ -512,4 +522,3 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 	}
 }
-
