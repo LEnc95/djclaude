@@ -1,12 +1,18 @@
 [project]
 name = "djclaude-worker"
 version = "0.1.0"
-description = "Karaoke processing pipeline: yt-dlp + Demucs + WhisperX"
+description = "Karaoke processing pipeline: yt-dlp + Demucs + faster-whisper"
 requires-python = ">=3.10,<3.12"
 
-# Pinned: CUDA 12.1 wheels. PyTorch 2.3.x is the last that plays nicely with
-# both demucs and whisperx as of late 2025. Bump only when both projects
-# confirm compatibility.
+# Strategy: avoid whisperx (drags in PyAV which needs ffmpeg dev libs on
+# Windows and pins faster-whisper to ==1.0.1). Use faster-whisper directly
+# for both transcription and word timestamps (`word_timestamps=True`).
+#
+# Install in stages — see setup.bat:
+#   stage A: core wheels (--only-binary=:all:)
+#   stage B: demucs's safe Python deps (skip openunmix → av)
+#   stage C: demucs with --no-deps
+#   stage D: editable install with --no-deps
 dependencies = [
     "fastapi==0.115.5",
     "uvicorn[standard]==0.32.1",
@@ -18,26 +24,22 @@ dependencies = [
     "torch==2.3.1",
     "torchaudio==2.3.1",
 
-    "demucs==4.0.1",
-    "whisperx==3.1.5",
-    # faster-whisper is pulled in transitively by whisperx; let whisperx
-    # decide the exact pin (3.1.5 wants ==1.0.1; pinning it ourselves
-    # makes pip refuse to resolve).
-    # av (PyAV) is pulled in transitively. Pin to a range that has cp311
-    # Windows wheels so pip never tries to build it from source against
-    # ffmpeg dev libs (which Windows users don't have).
-    "av>=14.0.0,<15",
+    # Whisper inference + word-level timestamps in one package, all wheels.
+    "faster-whisper>=1.0.3,<2",
 
-    "yt-dlp==2024.11.18",
+    "yt-dlp>=2024.11.18",
     "mutagen==1.47.0",
 
     "Pillow==11.0.0",
+
+    # Demucs and its non-PyAV deps are installed separately by setup.bat
+    # to bypass the PyAV transitive dep entirely. Do not list demucs here.
 ]
 
 [project.optional-dependencies]
 dev = ["ruff==0.7.4", "pytest==8.3.3"]
 
-# Use the PyTorch CUDA 12.1 index when installing:
+# CUDA 12.1 wheels:
 #   pip install -e . --extra-index-url https://download.pytorch.org/whl/cu121
 
 [tool.ruff]

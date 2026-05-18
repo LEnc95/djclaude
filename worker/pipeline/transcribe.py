@@ -1,4 +1,11 @@
-"""WhisperX word-level transcription + alignment."""
+"""Word-level transcription via faster-whisper.
+
+We deliberately do NOT use whisperx — its transitive deps (PyAV, etc.) are
+a Windows install nightmare and it pins faster-whisper to an old version.
+faster-whisper's `word_timestamps=True` gives us perfectly usable word
+alignment for karaoke. Less precise than WhisperX's separate alignment
+model pass, but the diff is sub-100ms and inaudible for sing-along use.
+"""
 from __future__ import annotations
 
 import gc
@@ -8,48 +15,43 @@ from pathlib import Path
 from typing import Callable
 
 import torch
+from faster_whisper import WhisperModel
 
 from ..settings import settings
 
 log = logging.getLogger(__name__)
 
-# Lazy globals: models load on first use, then live across jobs to avoid
-# re-loading the 3 GB large-v3 weights every song.
-_whisper = None
-_align_models: dict[str, tuple[object, dict]] = {}
+# Lazy global: the 3 GB large-v3 weights load once, then live across jobs.
+_model: WhisperModel | None = None
 
 
 class TranscribeError(RuntimeError):
     pass
 
 
-def _resolve_device() -> str:
-    if settings.worker_device == "auto":
-        return "cuda" if torch.cuda.is_available() else "cpu"
-    return settings.worker_device
+def _resolve_device() -> tuple[str, str]:
+    """Return (device, compute_type) honoring WORKER_DEVICE + auto-detect."""
+    if settings.worker_device == "cpu":
+        return "cpu", "int8"
+    if settings.worker_device == "cuda":
+        return "cuda", settings.worker_compute_type
+    if torch.cuda.is_available():
+        return "cuda", settings.worker_compute_type
+    return "cpu", "int8"
 
 
-def _load_whisper(device: str):
-    global _whisper
-    if _whisper is None:
-        import whisperx
-        log.info("loading whisper %s on %s (%s)", settings.whisper_model, device,
-                 settings.worker_compute_type)
-        _whisper = whisperx.load_model(
+def _load_model() -> WhisperModel:
+    global _model
+    if _model is None:
+        device, compute_type = _resolve_device()
+        log.info("loading whisper %s on %s (%s)",
+                 settings.whisper_model, device, compute_type)
+        _model = WhisperModel(
             settings.whisper_model,
-            device,
-            compute_type=settings.worker_compute_type,
+            device=device,
+            compute_type=compute_type,
         )
-    return _whisper
-
-
-def _load_aligner(lang: str, device: str):
-    if lang not in _align_models:
-        import whisperx
-        log.info("loading aligner for %s on %s", lang, device)
-        model_a, metadata = whisperx.load_align_model(language_code=lang, device=device)
-        _align_models[lang] = (model_a, metadata)
-    return _align_models[lang]
+    return _model
 
 
 def transcribe(
@@ -57,16 +59,16 @@ def transcribe(
     job_id: str,
     progress: Callable[[float], None],
 ) -> dict:
-    """Run WhisperX on `audio_path` (the ORIGINAL, vocals-in audio — Whisper
-    needs the vocals to transcribe them) and return a lyrics JSON structure:
+    """Run faster-whisper on `audio_path` (vocals included — we need them
+    to transcribe) and return the same lyrics JSON shape the frontend
+    LyricsCanvas expects:
 
         {
           "language": "en",
           "duration": 213.4,
           "segments": [
             {
-              "start": 0.0,
-              "end": 4.21,
+              "start": 0.0, "end": 4.21,
               "text": "Coming out of my cage and I've been doing just fine",
               "words": [
                 {"word": "Coming", "start": 0.10, "end": 0.43, "score": 0.94},
@@ -76,81 +78,50 @@ def transcribe(
             ...
           ]
         }
-
-    This file is what the frontend's LyricsCanvas reads to highlight words
-    against the playing instrumental.
     """
-    import whisperx
-
-    device = _resolve_device()
-    progress(0.05)
-
-    audio = whisperx.load_audio(str(audio_path))
-    whisper = _load_whisper(device)
-
+    model = _load_model()
     progress(0.10)
-    result = whisper.transcribe(
-        audio,
-        batch_size=16,
-        language=settings.whisper_language,
+
+    segments_iter, info = model.transcribe(
+        str(audio_path),
+        word_timestamps=True,
+        language=settings.whisper_language,  # None → auto-detect
+        vad_filter=True,                     # skip non-vocal sections
+        beam_size=5,
     )
-    detected_lang = result["language"]
-    progress(0.55)
 
-    try:
-        model_a, metadata = _load_aligner(detected_lang, device)
-        aligned = whisperx.align(
-            result["segments"],
-            model_a,
-            metadata,
-            audio,
-            device,
-            return_char_alignments=False,
-        )
-        segments = aligned["segments"]
-    except Exception as e:
-        # Alignment is best-effort. If no aligner exists for the detected
-        # language we still ship Whisper's coarser segment timestamps.
-        log.warning("alignment failed (%s); falling back to segment-level timestamps", e)
-        segments = result["segments"]
+    out_segments = []
+    total_duration = float(info.duration or 0)
+    for seg in segments_iter:
+        words = []
+        for w in (seg.words or []):
+            words.append({
+                "word": (w.word or "").strip(),
+                "start": round(float(w.start), 3),
+                "end": round(float(w.end), 3),
+                "score": round(float(w.probability or 0.0), 3),
+            })
+        out_segments.append({
+            "start": round(float(seg.start), 3),
+            "end": round(float(seg.end), 3),
+            "text": (seg.text or "").strip(),
+            "words": words,
+        })
+        if total_duration > 0:
+            progress(min(0.95, 0.10 + 0.85 * (seg.end / total_duration)))
 
-    progress(0.95)
-    duration = float(segments[-1].get("end", 0)) if segments else 0.0
-
-    out = {
-        "language": detected_lang,
-        "duration": duration,
-        "segments": [_clean_segment(s) for s in segments],
+    final = {
+        "language": info.language,
+        "duration": total_duration,
+        "segments": out_segments,
     }
 
-    # WhisperX leaks VRAM if you load multiple aligners. Aggressive GC here
-    # keeps headroom for Demucs on the next job.
     gc.collect()
-    if device == "cuda":
+    if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
     progress(1.0)
-    return out
-
-
-def _clean_segment(s: dict) -> dict:
-    words = []
-    for w in s.get("words", []) or []:
-        # alignment sometimes drops start/end on unaligned words — skip those
-        if "start" not in w or "end" not in w:
-            continue
-        words.append({
-            "word": w.get("word", "").strip(),
-            "start": round(float(w["start"]), 3),
-            "end": round(float(w["end"]), 3),
-            "score": round(float(w.get("score", 0.0)), 3),
-        })
-    return {
-        "start": round(float(s.get("start", 0.0)), 3),
-        "end": round(float(s.get("end", 0.0)), 3),
-        "text": s.get("text", "").strip(),
-        "words": words,
-    }
+    return final
 
 
 def write_lyrics_json(data: dict, out_path: Path) -> None:
