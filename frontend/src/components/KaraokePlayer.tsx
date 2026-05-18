@@ -100,17 +100,20 @@ export function KaraokePlayer(props: Props) {
       .catch((e) => console.warn("[KaraokePlayer] play() REJECTED:", e.name, e.message));
   }, [media?.id, shouldAutoplay]);
 
-  // Surface decoder/network errors on the <video> itself.
+  // Surface decoder/network errors on the media element. Uses BUILD_ID in
+  // the log so it's obvious whether the bundle the browser loaded is the
+  // post-audio-swap one (BUILD_ID v3) or an older cached version.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     const onError = () => {
       const err = v.error;
-      console.warn("[KaraokePlayer] <video> error",
-        err ? { code: err.code, message: err.message } : "(no MediaError)");
+      console.warn("[KaraokePlayer v3-audio] error",
+        err ? { code: err.code, message: err.message } : "(no MediaError)",
+        "tagName=" + v.tagName);
     };
-    const onLoaded = () => console.info("[KaraokePlayer] loadedmetadata",
-      { duration: v.duration, videoWidth: v.videoWidth, videoHeight: v.videoHeight });
+    const onLoaded = () => console.info("[KaraokePlayer v3-audio] loadedmetadata",
+      { duration: v.duration, tagName: v.tagName });
     v.addEventListener("error", onError);
     v.addEventListener("loadedmetadata", onLoaded);
     return () => {
