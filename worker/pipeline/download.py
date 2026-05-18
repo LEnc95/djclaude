@@ -96,8 +96,6 @@ def download(
         try:
             log.info("download attempt %d/%d for job %s: %s",
                      i, len(candidates), job_id, cand_url)
-            # Reset progress for each candidate so the UI doesn't show 90%
-            # then "failed" — it shows fresh progress for the new attempt.
             return _download_one(cand_url, out_dir, progress)
         except yt_dlp.utils.DownloadError as e:
             msg = str(e)
@@ -107,10 +105,11 @@ def download(
                         i, len(candidates),
                         " (skip-and-try-next)" if skip else "",
                         msg.split('\n')[0][:200])
+            log.exception("candidate %d/%d full traceback:", i, len(candidates))
             continue
         except Exception as e:
             last_err = e
-            log.warning("candidate %d/%d unexpected error: %s", i, len(candidates), e)
+            log.exception("candidate %d/%d unexpected error full traceback:", i, len(candidates))
             continue
 
     raise DownloadError(
@@ -219,8 +218,11 @@ def _download_one_inner(
     }
     if settings.yt_dlp_rate_limit:
         ydl_opts["ratelimit"] = _parse_rate(settings.yt_dlp_rate_limit)
-    if settings.yt_dlp_cookies_file:
-        ydl_opts["cookiefile"] = str(settings.yt_dlp_cookies_file)
+    # Belt + suspenders against the "empty env → Path(.) → cookiefile=." bug:
+    # only set cookiefile if the path is real and points at an existing file.
+    cookies = settings.yt_dlp_cookies_file
+    if cookies and str(cookies).strip() not in ("", ".") and Path(str(cookies)).is_file():
+        ydl_opts["cookiefile"] = str(cookies)
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)

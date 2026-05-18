@@ -91,6 +91,12 @@ class Settings(BaseSettings):
             self.media_dir = _under_root(str(self.media_dir))
         if not self.cache_dir.is_absolute():
             self.cache_dir = _under_root(str(self.cache_dir))
+        # CRITICAL: pydantic-settings parses an env var of "" (empty string)
+        # as Path(""), which Python silently treats as "." — when handed to
+        # yt-dlp as cookiefile it tries open(".", "r") → PermissionError.
+        # Same risk for any other Optional[Path] field that defaults blank.
+        if self.yt_dlp_cookies_file and str(self.yt_dlp_cookies_file).strip() in ("", "."):
+            self.yt_dlp_cookies_file = None
 
 
 settings = Settings()
