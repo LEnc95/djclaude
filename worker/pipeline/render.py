@@ -74,36 +74,40 @@ def render_webm(
     """Mux instrumental audio over a still-image video → .webm (VP9 + Opus).
 
     Single-frame still video + audio is ~3 MB per song at this bitrate.
+
+    IMPORTANT: we probe the audio duration first and pass `-t` to ffmpeg
+    instead of using `-shortest`. With `-loop 1 -shortest`, ffmpeg's WebM
+    muxer leaves duration=N/A in the container, and browsers refuse to
+    .play() such files (they think the media has 0 length, so the play
+    button toggles right back to pause). With explicit `-t`, the duration
+    lands in the container header and playback works everywhere.
     """
     bg_path = settings.cache_dir / "bg" / f"{job_id}.jpg"
     _build_background(thumb_url, artist, title, bg_path)
+    progress(0.20)
+
+    duration = _probe_duration(instrumental_path)
     progress(0.30)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    # Video is a single static frame; lyrics render client-side as a canvas
-    # overlay. So we starve the video track of bitrate and use one keyframe
-    # + a very long GOP so every subsequent frame is a near-empty p-frame.
-    # On a 3-minute song this brings video from ~7 MB → ~300 KB. Audio
-    # dominates total file size (~3 MB at 128 kbps Opus, ~2 MB at 96 kbps).
     cmd = [
         "ffmpeg", "-y",
         "-loop", "1", "-framerate", "1", "-i", str(bg_path),
         "-i", str(instrumental_path),
+        "-t", f"{duration:.3f}",   # explicit duration → muxer writes it
         "-c:v", "libvpx-vp9",
-        "-b:v", "40k",             # static image — barely needs anything
+        "-b:v", "40k",
         "-minrate", "20k",
         "-maxrate", "80k",
-        "-r", "1",                 # 1 fps; browsers handle this fine
-        "-g", "9999",              # single keyframe, rest are tiny p-frames
+        "-r", "1",
+        "-g", "9999",
         "-pix_fmt", "yuv420p",
         "-deadline", "good",
         "-cpu-used", "4",
         "-c:a", "libopus",
-        "-b:a", "96k",             # good music quality, smaller than 128k
+        "-b:a", "96k",
         "-vbr", "on",
         "-application", "audio",
-        "-shortest",
-        "-movflags", "+faststart",
         str(out_path),
     ]
     log.info("ffmpeg: %s", " ".join(cmd))
@@ -112,9 +116,26 @@ def render_webm(
     except subprocess.CalledProcessError as e:
         raise RenderError(f"ffmpeg failed: {e.stderr[-2000:]}") from e
 
-    # Drop the bg jpeg; we won't need it again.
     bg_path.unlink(missing_ok=True)
     progress(1.0)
+
+
+def _probe_duration(audio_path: Path) -> float:
+    """Return the audio file's duration in seconds. Falls back to a long
+    sentinel (10 hours) if probe fails — better an over-long file than
+    one with no duration."""
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error",
+             "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1",
+             str(audio_path)],
+            check=True, capture_output=True, text=True,
+        )
+        return float(out.stdout.strip())
+    except Exception as e:
+        log.warning("ffprobe duration failed (%s); falling back to 10h", e)
+        return 36000.0
 
 
 def save_thumbnail(thumb_url: str | None, out_path: Path) -> None:

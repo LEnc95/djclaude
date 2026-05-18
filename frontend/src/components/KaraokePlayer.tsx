@@ -78,12 +78,41 @@ export function KaraokePlayer(props: Props) {
 
   // Even with the autoPlay attribute, some browsers gate audible playback
   // unless we explicitly call .play() in response to a recent user gesture
-  // (e.g. clicking the "Play" button that opened this modal). Try; ignore
-  // the rejection — native controls still work as a manual fallback.
+  // (e.g. clicking the "Play" button that opened this modal). LOG the
+  // rejection so users can see what the browser is complaining about
+  // (autoplay policy vs. decoder vs. network) — silent fallback hid every
+  // real bug during testing.
   useEffect(() => {
     if (!shouldAutoplay || !videoRef.current || !media) return;
-    videoRef.current.play().catch(() => {/* autoplay blocked, fall back to controls */});
+    const v = videoRef.current;
+    console.info("[KaraokePlayer] attempting autoplay", {
+      src: v.src,
+      readyState: v.readyState,
+      duration: v.duration,
+    });
+    v.play()
+      .then(() => console.info("[KaraokePlayer] play() OK"))
+      .catch((e) => console.warn("[KaraokePlayer] play() REJECTED:", e.name, e.message));
   }, [media?.id, shouldAutoplay]);
+
+  // Surface decoder/network errors on the <video> itself.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onError = () => {
+      const err = v.error;
+      console.warn("[KaraokePlayer] <video> error",
+        err ? { code: err.code, message: err.message } : "(no MediaError)");
+    };
+    const onLoaded = () => console.info("[KaraokePlayer] loadedmetadata",
+      { duration: v.duration, videoWidth: v.videoWidth, videoHeight: v.videoHeight });
+    v.addEventListener("error", onError);
+    v.addEventListener("loadedmetadata", onLoaded);
+    return () => {
+      v.removeEventListener("error", onError);
+      v.removeEventListener("loadedmetadata", onLoaded);
+    };
+  }, [media?.id]);
 
   return (
     <div class="karaoke-player">
