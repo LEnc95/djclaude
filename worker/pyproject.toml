@@ -45,3 +45,18 @@ dev = ["ruff==0.7.4", "pytest==8.3.3"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+# Tell setuptools that the project dir IS the package dir. Without this,
+# auto-discovery looks for a nested ./worker/ inside ./ and finds nothing,
+# so `pip install -e .` registers the project metadata but leaves the
+# `worker` namespace unimportable.
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["worker", "worker.pipeline"]
+
+[tool.setuptools.package-dir]
+"worker" = "."
+"worker.pipeline" = "pipeline"
