@@ -29,6 +29,11 @@ dependencies = [
     # Whisper inference + word-level timestamps in one package, all wheels.
     "faster-whisper>=1.0.3,<2",
 
+    # torchaudio on Windows has no built-in WAV write backend; demucs needs
+    # to save its no_vocals.wav output. soundfile (libsndfile wrapper)
+    # registers a backend with torchaudio at import time.
+    "soundfile>=0.12",
+
     # YouTube updates its player signatures every few months; older yt-dlp
     # silently fails with "Permission denied: '.'" when no formats are
     # extractable. Pin to a known-current floor and let pip pull newer.

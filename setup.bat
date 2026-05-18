@@ -187,7 +187,7 @@ REM compiled packages prefer wheels.
 echo   stage B: installing demucs runtime deps...
 python -m pip install --prefer-binary ^
     julius einops pyyaml tqdm omegaconf diffq dora-search ^
-    openunmix lameenc
+    openunmix lameenc soundfile
 if errorlevel 1 (
     echo.
     echo Stage B FAILED ^(demucs deps^). See errors above.
