@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Callable
 
@@ -32,10 +33,14 @@ def separate(
     out_dir = settings.cache_dir / "demucs" / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # sys.executable = the venv's python.exe that's actually running the
+    # worker. Using bare "python" would resolve to whatever's first in PATH,
+    # which is usually the system Python (no demucs installed) and gives
+    # "No module named demucs.separate".
     cmd = [
-        "python", "-m", "demucs.separate",
+        sys.executable, "-m", "demucs.separate",
         "-n", settings.demucs_model,
-        "--two-stems", "vocals",   # only need vocals vs no_vocals; saves time + RAM
+        "--two-stems", "vocals",
         "-o", str(out_dir),
         "--filename", "{track}/{stem}.{ext}",
         str(audio_path),
