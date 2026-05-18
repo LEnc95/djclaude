@@ -8,6 +8,7 @@ import { Icon } from "../components/Icon";
 import { SEO } from "../components/SEO";
 import { KaraokePlayer } from "../components/KaraokePlayer";
 import { YouTubeFallbackPlayer } from "../components/YouTubeFallbackPlayer";
+import { SongAutocomplete } from "../components/SongAutocomplete";
 import { usePlaybackSync } from "../hooks/usePlaybackSync";
 import { DEFAULT_LYRICS_STYLE } from "../lyrics/presets";
 
@@ -402,17 +403,13 @@ function SubmitForm(props: {
           <div class="relative">
             <Icon
               name="search"
-              class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
+              class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none z-10"
             />
-            <input
-              class="neon-input tertiary pl-12"
-              type="text"
-              required
-              placeholder="Song name or https://youtube.com/..."
+            <SongAutocomplete
+              className="neon-input tertiary pl-12"
+              placeholder="Start typing — we'll search the library"
               value={song}
-              onInput={(e) => setSong((e.target as HTMLInputElement).value)}
-              autoComplete="off"
-              spellcheck={true}
+              onChange={setSong}
             />
           </div>
         </Field>
