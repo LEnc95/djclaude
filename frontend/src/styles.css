@@ -213,6 +213,29 @@
   height: 100%;
   object-fit: cover;
 }
+/* New audio-element architecture: background is a static CSS-styled div
+   behind the lyrics canvas. The audio element is anchored at the bottom
+   for native controls (host mode only). */
+.karaoke-player__bg {
+  position: absolute;
+  inset: 0;
+  background-color: #0a0a14;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(2px) brightness(0.55);
+  transform: scale(1.05); /* hide blur edge */
+}
+.karaoke-player__audio {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  width: 100%;
+  z-index: 3;
+  /* Make sure native controls aren't translucent on dark bg */
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
 .karaoke-player__lyrics {
   position: absolute;
   /* Leave the bottom 60px clear so users can reach the native HTML5

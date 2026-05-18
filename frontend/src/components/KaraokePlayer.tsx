@@ -27,15 +27,20 @@ interface Props {
 // The sync logic lives in usePlaybackSync — this component only renders.
 export function KaraokePlayer(props: Props) {
   const { song, mode, lyricsStyle } = props;
-  const videoRef = useRef<HTMLVideoElement>(null);
+  // Historically held a <video>; now holds an <audio>. Kept the name so
+  // usePlaybackSync and the parent's onVideoRef callback don't need to change.
+  const videoRef = useRef<HTMLMediaElement>(null);
   const [doc, setDoc] = useState<LyricsDoc | null>(null);
   const [loading, setLoading] = useState(false);
 
   const media: Media | null = song?.primary_media ?? null;
 
-  // Tell parent about the <video> element so it can wire usePlaybackSync.
+  // Tell parent about the media element so it can wire usePlaybackSync.
+  // (The HTMLAudioElement is a subtype of HTMLMediaElement, same API as
+  // HTMLVideoElement for play/pause/currentTime/duration — usePlaybackSync
+  // doesn't care which kind it is.)
   useEffect(() => {
-    props.onVideoRef?.(videoRef.current);
+    props.onVideoRef?.(videoRef.current as any);
     return () => props.onVideoRef?.(null);
   }, [videoRef.current]);
 
