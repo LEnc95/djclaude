@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lukeencrapera/djclaude/backend/internal/config"
+	"github.com/lukeencrapera/djclaude/backend/internal/importers"
 	"github.com/lukeencrapera/djclaude/backend/internal/models"
 	"github.com/lukeencrapera/djclaude/backend/internal/queue"
 	"github.com/lukeencrapera/djclaude/backend/internal/store"
@@ -22,13 +23,22 @@ import (
 )
 
 type Server struct {
-	cfg   config.Config
-	store store.Store
-	hub   *ws.Hub
+	cfg       config.Config
+	store     store.FullStore
+	hub       *ws.Hub
+	importers *importers.Registry
 }
 
-func NewServer(cfg config.Config, st store.Store, hub *ws.Hub) *Server {
-	return &Server{cfg: cfg, store: st, hub: hub}
+func NewServer(cfg config.Config, st store.FullStore, hub *ws.Hub) *Server {
+	srv := &Server{
+		cfg:       cfg,
+		store:     st,
+		hub:       hub,
+		importers: importers.NewRegistry(cfg.SpotifyClientID, cfg.SpotifyClientSecret),
+	}
+	// Wire the inbound WS handler so the hub fans playback:state through us.
+	hub.SetInboundHandler(srv.handleInboundWS)
+	return srv
 }
 
 func (s *Server) Register(mux *http.ServeMux) {
@@ -43,13 +53,51 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("PATCH /api/events/{code}/requests/{id}", s.updateRequest)
 	mux.HandleFunc("DELETE /api/events/{code}/requests/{id}", s.deleteRequest)
 
+	// Playback (HTTP fallback; primary path is over WS)
+	mux.HandleFunc("POST /api/events/{code}/playback", s.postPlayback)
+
+	// Library
+	mux.HandleFunc("GET /api/library/songs", s.listLibrarySongs)
+	mux.HandleFunc("GET /api/library/songs/{id}", s.getLibrarySong)
+	mux.HandleFunc("DELETE /api/library/songs/{id}", s.requireAdmin(s.deleteLibrarySong))
+	mux.HandleFunc("POST /api/library/search", s.searchLibrary)
+
+	// Jobs (admin-only except the worker callback, which uses X-Worker-Token)
+	mux.HandleFunc("POST /api/jobs", s.requireAdmin(s.createJob))
+	mux.HandleFunc("GET /api/jobs", s.requireAdmin(s.listJobs))
+	mux.HandleFunc("GET /api/jobs/{id}", s.requireAdmin(s.getJob))
+	mux.HandleFunc("DELETE /api/jobs/{id}", s.requireAdmin(s.cancelJob))
+	mux.HandleFunc("POST /api/jobs/{id}/retry", s.requireAdmin(s.retryJob))
+	mux.HandleFunc("POST /api/jobs/{id}/priority", s.requireAdmin(s.setJobPriority))
+	mux.HandleFunc("POST /api/jobs/{id}/callback", s.jobCallback)
+
+	// Admin auth + settings
+	mux.HandleFunc("POST /api/admin/login", s.adminLogin)
+	mux.HandleFunc("POST /api/admin/logout", s.requireAdmin(s.adminLogout))
+	mux.HandleFunc("GET /api/admin/me", s.requireAdmin(s.adminMe))
+	mux.HandleFunc("POST /api/admin/change-password", s.requireAdmin(s.adminChangePassword))
+	mux.HandleFunc("GET /api/settings", s.requireAdmin(s.getSettings))
+	mux.HandleFunc("PATCH /api/settings", s.requireAdmin(s.updateSettings))
+
+	// Bulk importers
+	mux.HandleFunc("POST /api/import/artist", s.requireAdmin(s.importArtist))
+	mux.HandleFunc("POST /api/import/year", s.requireAdmin(s.importYear))
+	mux.HandleFunc("POST /api/import", s.requireAdmin(s.importGeneric))
+	mux.HandleFunc("GET /api/import/batches", s.requireAdmin(s.listBatches))
+	mux.HandleFunc("GET /api/import/sources", s.requireAdmin(s.listImportSources))
+
 	// WebSocket
 	mux.HandleFunc("GET /ws/{code}", s.serveWS)
+
+	// Media (byte-range static)
+	mux.HandleFunc("GET /media/", s.serveMedia)
+	mux.HandleFunc("HEAD /media/", s.serveMedia)
 
 	// Health
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
+	mux.HandleFunc("GET /api/health/worker", s.workerHealth)
 }
 
 // ----- request DTOs -----
@@ -271,6 +319,10 @@ func (s *Server) createRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Try to resolve to a library song. Falls back to YouTube-embed playback
+	// on the player side when SongID stays empty.
+	resolved := s.resolveRequest(r.Context(), videoID, songTitle, "")
+
 	status := models.StatusPending
 	if ev.AutoAccept {
 		status = models.StatusAccepted
@@ -284,6 +336,7 @@ func (s *Server) createRequest(w http.ResponseWriter, r *http.Request) {
 		YoutubeURL:     url,
 		YoutubeVideoID: videoID,
 		SongTitle:      songTitle,
+		SongID:         resolved.SongID,
 		Notes:          req.Notes,
 		Status:         status,
 		IsDuplicate:    dup,
@@ -297,6 +350,13 @@ func (s *Server) createRequest(w http.ResponseWriter, r *http.Request) {
 	if err := s.store.CreateRequest(r.Context(), newReq); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// If we couldn't resolve to a library song AND auto-enqueue is on, kick
+	// off a background processing job. Best-effort — failure here doesn't
+	// affect the immediate request response (fallback player still works).
+	if resolved.SongID == "" && videoID != "" && s.autoEnqueueEnabled(r.Context()) {
+		s.autoEnqueueJob(r.Context(), url, songTitle)
 	}
 
 	// For the guest response include their queue position.

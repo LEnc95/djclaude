@@ -16,7 +16,7 @@ type sqliteStore struct {
 	db *sql.DB
 }
 
-func NewSQLite(path string) (Store, error) {
+func NewSQLite(path string) (FullStore, error) {
 	db, err := sql.Open("sqlite", path+"?_pragma=journal_mode(WAL)&_pragma=foreign_keys(on)&_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, err
@@ -24,6 +24,9 @@ func NewSQLite(path string) (Store, error) {
 	db.SetMaxOpenConns(1) // SQLite — keep it simple, avoid lock contention.
 	s := &sqliteStore{db: db}
 	if err := s.migrate(); err != nil {
+		return nil, err
+	}
+	if err := s.migrateLibrary(); err != nil {
 		return nil, err
 	}
 	return s, nil
@@ -120,6 +123,37 @@ func (s *sqliteStore) GetEventByCode(ctx context.Context, code string) (models.E
 	return e, nil
 }
 
+func (s *sqliteStore) GetEventByID(ctx context.Context, id string) (models.Event, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, code, venue_name, name, status, accepting_requests, auto_accept,
+		       per_singer_limit, host_token, starts_at, ends_at, created_at
+		FROM events WHERE id = ?`, id)
+	var e models.Event
+	var status string
+	var acc, auto int
+	var starts, ends sql.NullTime
+	err := row.Scan(&e.ID, &e.Code, &e.VenueName, &e.Name, &status, &acc, &auto,
+		&e.PerSingerLimit, &e.HostToken, &starts, &ends, &e.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.Event{}, ErrNotFound
+	}
+	if err != nil {
+		return models.Event{}, err
+	}
+	e.Status = models.EventStatus(status)
+	e.AcceptingRequests = acc == 1
+	e.AutoAccept = auto == 1
+	if starts.Valid {
+		t := starts.Time
+		e.StartsAt = &t
+	}
+	if ends.Valid {
+		t := ends.Time
+		e.EndsAt = &t
+	}
+	return e, nil
+}
+
 func (s *sqliteStore) UpdateEvent(ctx context.Context, e models.Event) error {
 	res, err := s.db.ExecContext(ctx, `
 		UPDATE events SET venue_name=?, name=?, status=?, accepting_requests=?,
@@ -142,12 +176,13 @@ func (s *sqliteStore) UpdateEvent(ctx context.Context, e models.Event) error {
 func (s *sqliteStore) CreateRequest(ctx context.Context, r models.Request) error {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO requests (id, event_id, singer_name, youtube_url, youtube_video_id, song_title,
-		                      notes, status, rotation_index, manual_order, is_duplicate, guest_id,
-		                      created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		                      song_id, notes, status, rotation_index, manual_order, is_duplicate,
+		                      guest_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		r.ID, r.EventID, r.SingerName, r.YoutubeURL, nullStr(r.YoutubeVideoID),
-		nullStr(r.SongTitle), nullStr(r.Notes), string(r.Status), r.RotationIndex,
-		r.ManualOrder, boolInt(r.IsDuplicate), nullStr(r.GuestID), r.CreatedAt, r.UpdatedAt)
+		nullStr(r.SongTitle), nullStr(r.SongID), nullStr(r.Notes), string(r.Status),
+		r.RotationIndex, r.ManualOrder, boolInt(r.IsDuplicate), nullStr(r.GuestID),
+		r.CreatedAt, r.UpdatedAt)
 	return err
 }
 
@@ -159,12 +194,13 @@ func (s *sqliteStore) GetRequest(ctx context.Context, id string) (models.Request
 func (s *sqliteStore) UpdateRequest(ctx context.Context, r models.Request) error {
 	r.UpdatedAt = time.Now().UTC()
 	res, err := s.db.ExecContext(ctx, `
-		UPDATE requests SET singer_name=?, youtube_url=?, youtube_video_id=?, song_title=?, notes=?,
-		                    status=?, rotation_index=?, manual_order=?, is_duplicate=?, updated_at=?
+		UPDATE requests SET singer_name=?, youtube_url=?, youtube_video_id=?, song_title=?,
+		                    song_id=?, notes=?, status=?, rotation_index=?, manual_order=?,
+		                    is_duplicate=?, updated_at=?
 		WHERE id=?`,
 		r.SingerName, r.YoutubeURL, nullStr(r.YoutubeVideoID), nullStr(r.SongTitle),
-		nullStr(r.Notes), string(r.Status), r.RotationIndex, r.ManualOrder,
-		boolInt(r.IsDuplicate), r.UpdatedAt, r.ID)
+		nullStr(r.SongID), nullStr(r.Notes), string(r.Status), r.RotationIndex,
+		r.ManualOrder, boolInt(r.IsDuplicate), r.UpdatedAt, r.ID)
 	if err != nil {
 		return err
 	}
@@ -260,8 +296,9 @@ func (s *sqliteStore) FindDuplicate(ctx context.Context, eventID, videoID string
 // ---- helpers ----
 
 const requestSelect = `
-	SELECT id, event_id, singer_name, youtube_url, youtube_video_id, song_title, notes,
-	       status, rotation_index, manual_order, is_duplicate, guest_id, created_at, updated_at
+	SELECT id, event_id, singer_name, youtube_url, youtube_video_id, song_title, song_id,
+	       notes, status, rotation_index, manual_order, is_duplicate, guest_id,
+	       created_at, updated_at
 	FROM requests`
 
 type rowScanner interface {
@@ -270,11 +307,12 @@ type rowScanner interface {
 
 func scanRequest(row rowScanner) (models.Request, error) {
 	var r models.Request
-	var vid, title, notes, guestID sql.NullString
+	var vid, title, songID, notes, guestID sql.NullString
 	var dup int
 	var status string
-	err := row.Scan(&r.ID, &r.EventID, &r.SingerName, &r.YoutubeURL, &vid, &title, &notes,
-		&status, &r.RotationIndex, &r.ManualOrder, &dup, &guestID, &r.CreatedAt, &r.UpdatedAt)
+	err := row.Scan(&r.ID, &r.EventID, &r.SingerName, &r.YoutubeURL, &vid, &title, &songID,
+		&notes, &status, &r.RotationIndex, &r.ManualOrder, &dup, &guestID,
+		&r.CreatedAt, &r.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.Request{}, ErrNotFound
 	}
@@ -283,6 +321,7 @@ func scanRequest(row rowScanner) (models.Request, error) {
 	}
 	r.YoutubeVideoID = vid.String
 	r.SongTitle = title.String
+	r.SongID = songID.String
 	r.Notes = notes.String
 	r.GuestID = guestID.String
 	r.IsDuplicate = dup == 1

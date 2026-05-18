@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { api, ApiError } from "../api";
 import { connectWS } from "../ws";
-import type { KaraokeEvent, KaraokeRequest, WSEvent } from "../types";
+import type { KaraokeEvent, KaraokeRequest, PlaybackState, Song, WSEvent } from "../types";
 import { AuraBackground } from "../components/AuraBackground";
 import { TopBar } from "../components/TopBar";
 import { Icon } from "../components/Icon";
 import { SEO } from "../components/SEO";
+import { KaraokePlayer } from "../components/KaraokePlayer";
+import { YouTubeFallbackPlayer } from "../components/YouTubeFallbackPlayer";
+import { SongAutocomplete } from "../components/SongAutocomplete";
+import { usePlaybackSync } from "../hooks/usePlaybackSync";
+import { DEFAULT_LYRICS_STYLE } from "../lyrics/presets";
 
 interface Props {
   code: string;
@@ -59,12 +64,30 @@ export function Guest({ code }: Props) {
         }
       }
     );
-    const disconnect = connectWS({ code, onEvent: handleEvent });
+    const ws = connectWS({ code, onEvent: handleEvent });
     return () => {
       cancel = true;
-      disconnect();
+      ws.close();
     };
   }, [code]);
+
+  // ---- Synced follower player ----
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
+  const [activeSong, setActiveSong] = useState<Song | null>(null);
+  const sync = usePlaybackSync({ role: "follower", videoRef: videoElRef });
+  const singing = useMemo(() => requests.find((r) => r.status === "singing"), [requests]);
+  useEffect(() => {
+    if (singing?.song_id) {
+      api.getLibrarySong(singing.song_id).then(setActiveSong).catch(() => setActiveSong(null));
+    } else {
+      setActiveSong(null);
+    }
+  }, [singing?.song_id]);
+  // Pipe playback:state into the sync hook.
+  // (handleEvent below routes it via setRemote.)
+  // Expose setRemote on a ref for handleEvent to call.
+  const setRemoteRef = useRef(sync.setRemote);
+  setRemoteRef.current = sync.setRemote;
 
   function handleEvent(ev: WSEvent) {
     switch (ev.type) {
@@ -74,6 +97,9 @@ export function Guest({ code }: Props) {
         break;
       case "event:updated":
         setEvent(ev.payload);
+        break;
+      case "playback:state":
+        setRemoteRef.current?.(ev.payload as PlaybackState);
         break;
       case "request:created":
       case "request:updated":
@@ -97,10 +123,7 @@ export function Guest({ code }: Props) {
       requests.filter((r) => r.status === "accepted" || r.status === "singing"),
     [requests]
   );
-  const singing = useMemo(
-    () => requests.find((r) => r.status === "singing"),
-    [requests]
-  );
+  // `singing` is declared earlier (player wiring); reuse.
   const myRequests = useMemo(
     () =>
       mySubmitted
@@ -218,6 +241,23 @@ export function Guest({ code }: Props) {
       <TopBar brand={event.venue_name || "Neon Lounge"} />
 
       <main class="flex-grow flex flex-col w-full max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-lg gap-lg pb-24">
+        {/* Synced now-playing panel — muted local <video> so the guest sees */}
+        {/* lyrics on their phone without having to look at the host's screen. */}
+        {singing && (
+          <section class="w-full">
+            {!singing.song_id && singing.youtube_video_id ? (
+              <YouTubeFallbackPlayer videoID={singing.youtube_video_id} mode="guest" />
+            ) : (
+              <KaraokePlayer
+                song={activeSong}
+                mode="guest"
+                lyricsStyle={DEFAULT_LYRICS_STYLE}
+                autoPlay={true}
+                onVideoRef={(v) => { videoElRef.current = v; }}
+              />
+            )}
+          </section>
+        )}
         {closed && (
           <Banner icon="block" tone="error">
             Karaoke is closed for tonight. See you next time!
@@ -364,17 +404,13 @@ function SubmitForm(props: {
           <div class="relative">
             <Icon
               name="search"
-              class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
+              class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none z-10"
             />
-            <input
-              class="neon-input tertiary pl-12"
-              type="text"
-              required
-              placeholder="Song name or https://youtube.com/..."
+            <SongAutocomplete
+              className="neon-input tertiary pl-12"
+              placeholder="Start typing — we'll search the library"
               value={song}
-              onInput={(e) => setSong((e.target as HTMLInputElement).value)}
-              autoComplete="off"
-              spellcheck={true}
+              onChange={setSong}
             />
           </div>
         </Field>

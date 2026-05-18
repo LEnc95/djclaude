@@ -1,0 +1,72 @@
+[project]
+name = "djclaude-worker"
+version = "0.1.0"
+description = "Karaoke processing pipeline: yt-dlp + Demucs + faster-whisper"
+requires-python = ">=3.10,<3.12"
+
+# Strategy: avoid whisperx (drags in PyAV which needs ffmpeg dev libs on
+# Windows and pins faster-whisper to ==1.0.1). Use faster-whisper directly
+# for both transcription and word timestamps (`word_timestamps=True`).
+#
+# Install in stages — see setup.bat:
+#   stage A: core wheels (--only-binary=:all:)
+#   stage B: demucs + its non-PyAV deps with --no-deps
+#   stage C: editable install with --no-deps
+dependencies = [
+    "fastapi==0.115.5",
+    "uvicorn[standard]==0.32.1",
+    "httpx==0.27.2",
+    "python-multipart==0.0.12",
+    "pydantic==2.9.2",
+    "pydantic-settings==2.6.1",
+
+    "torch==2.3.1",
+    "torchaudio==2.3.1",
+    # Torch 2.3.x was compiled against NumPy 1.x — NumPy 2 breaks demucs +
+    # torchaudio at import time with "_ARRAY_API not found". Pin <2.
+    "numpy<2",
+
+    # Whisper inference + word-level timestamps in one package, all wheels.
+    "faster-whisper>=1.0.3,<2",
+
+    # torchaudio on Windows has no built-in WAV write backend; demucs needs
+    # to save its no_vocals.wav output. soundfile (libsndfile wrapper)
+    # registers a backend with torchaudio at import time.
+    "soundfile>=0.12",
+
+    # YouTube updates its player signatures every few months; older yt-dlp
+    # silently fails with "Permission denied: '.'" when no formats are
+    # extractable. Pin to a known-current floor and let pip pull newer.
+    "yt-dlp>=2026.3.17",
+    "mutagen==1.47.0",
+
+    "Pillow==11.0.0",
+
+    # Demucs and its non-PyAV deps are installed separately by setup.bat
+    # to bypass the PyAV transitive dep entirely. Do not list demucs here.
+]
+
+[project.optional-dependencies]
+dev = ["ruff==0.7.4", "pytest==8.3.3"]
+
+# CUDA 12.1 wheels:
+#   pip install -e . --extra-index-url https://download.pytorch.org/whl/cu121
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+# Tell setuptools that the project dir IS the package dir. Without this,
+# auto-discovery looks for a nested ./worker/ inside ./ and finds nothing,
+# so `pip install -e .` registers the project metadata but leaves the
+# `worker` namespace unimportable.
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["worker", "worker.pipeline"]
+
+[tool.setuptools.package-dir]
+"worker" = "."
+"worker.pipeline" = "pipeline"

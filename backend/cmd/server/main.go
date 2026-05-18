@@ -27,28 +27,60 @@ func main() {
 	}
 	defer st.Close()
 
+	// Bootstrap the default admin/admin user on first boot (forces a password
+	// change on first login). No-op if any admin row already exists.
+	if err := api.EnsureDefaultAdmin(context.Background(), st); err != nil {
+		log.Fatalf("ensure default admin: %v", err)
+	}
+
+	// Make sure the media dir exists; the worker writes files here and the
+	// HTTP handler serves them out.
+	if err := os.MkdirAll(cfg.MediaDir, 0o755); err != nil {
+		log.Fatalf("mkdir media dir: %v", err)
+	}
+
 	hub := ws.NewHub()
 	srv := api.NewServer(cfg, st, hub)
 
 	mux := http.NewServeMux()
 	srv.Register(mux)
 
-	// Static frontend: serve `index.html` for any non-API path so the SPA
-	// router handles /r/:code and /host/:code.
+	// Static frontend: serve index.html for any non-API/non-media path so the
+	// SPA router handles /r/:code, /host/:code, /admin, /screen/:code, etc.
+	//
+	// Caching policy:
+	//   - index.html: Cache-Control: no-cache (must revalidate). Without
+	//     this, browsers happily serve a months-old HTML referencing a
+	//     stale Vite-hashed JS filename, and users never see new releases
+	//     without manually clearing cache.
+	//   - /assets/index-<hash>.js|css: filenames are content-hashed by
+	//     Vite, so safe to cache forever — a new build = new filename.
 	staticDir, _ := filepath.Abs(cfg.StaticDir)
 	fs := http.FileServer(http.Dir(staticDir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/ws/") {
+		if strings.HasPrefix(r.URL.Path, "/api/") ||
+			strings.HasPrefix(r.URL.Path, "/ws/") ||
+			strings.HasPrefix(r.URL.Path, "/media/") {
 			http.NotFound(w, r)
 			return
 		}
-		// If asking for a real file, serve it.
 		path := filepath.Join(staticDir, filepath.FromSlash(r.URL.Path))
 		if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
+			// Hashed asset (Vite output: /assets/index-XXXX.js|css) — long cache.
+			if strings.HasPrefix(r.URL.Path, "/assets/") {
+				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			} else {
+				// Non-asset static file (favicon, robots.txt, etc.) — short cache.
+				w.Header().Set("Cache-Control", "public, max-age=300")
+			}
 			fs.ServeHTTP(w, r)
 			return
 		}
-		// Otherwise, send index.html for SPA routing.
+		// SPA fallback → index.html. Always revalidate so new builds are
+		// picked up immediately without users having to clear their cache.
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
 		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 	})
 
@@ -60,7 +92,8 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("listening on %s (static: %s, db: %s)", cfg.Addr, staticDir, cfg.DatabasePath)
+		log.Printf("listening on %s (static=%s db=%s media=%s worker=%s)",
+			cfg.Addr, staticDir, cfg.DatabasePath, cfg.MediaDir, cfg.WorkerURL)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server: %v", err)
 		}

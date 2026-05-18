@@ -31,7 +31,10 @@ USER app
 
 ENV ADDR=:8080 \
     DATABASE_PATH=/data/karaoke.db \
-    STATIC_DIR=/app/frontend/dist
+    STATIC_DIR=/app/frontend/dist \
+    MEDIA_DIR=/data/media \
+    WORKER_URL="" \
+    WORKER_TOKEN=change-me-shared-secret
 
 EXPOSE 8080
 CMD ["/app/djclaude"]

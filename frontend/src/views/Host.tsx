@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { api } from "../api";
-import { connectWS } from "../ws";
-import type { KaraokeEvent, KaraokeRequest, WSEvent } from "../types";
+import { connectWS, type WSClient } from "../ws";
+import type { AppSettings, KaraokeEvent, KaraokeRequest, Song, WSEvent } from "../types";
 import { Icon } from "../components/Icon";
 import { RequestQRCode } from "../components/RequestQRCode";
 import { SEO } from "../components/SEO";
+import { KaraokePlayer } from "../components/KaraokePlayer";
+import { YouTubeFallbackPlayer } from "../components/YouTubeFallbackPlayer";
+import { usePlaybackSync } from "../hooks/usePlaybackSync";
+import { DEFAULT_LYRICS_STYLE } from "../lyrics/presets";
 
 interface Props {
   code: string;
@@ -38,15 +42,21 @@ export function Host({ code }: Props) {
   const [activeTab, setActiveTab] = useState<"deck" | "requests">("deck");
   const [qrOpen, setQrOpen] = useState(false);
 
+  const wsRef = useRef<WSClient | null>(null);
+
   useEffect(() => {
     if (!token) return;
-    const disconnect = connectWS({
+    const ws = connectWS({
       code,
       hostToken: token,
       onEvent: handleEvent,
       onStatus: setConn,
     });
-    return () => disconnect();
+    wsRef.current = ws;
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
   }, [code, token]);
 
   function handleEvent(ev: WSEvent) {
@@ -76,6 +86,36 @@ export function Host({ code }: Props) {
   }
 
   const singing = useMemo(() => requests.find((r) => r.status === "singing"), [requests]);
+
+  // ---- Player + playback sync ----
+  const [activeSong, setActiveSong] = useState<Song | null>(null);
+  const [lyricsStyle, setLyricsStyle] = useState(DEFAULT_LYRICS_STYLE);
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
+  usePlaybackSync({
+    role: "host",
+    videoRef: videoElRef,
+    ws: wsRef.current,
+    songID: activeSong?.id ?? "",
+    requestID: singing?.id,
+  });
+  // Load the library song for the current singer; null while loading or
+  // when the request hasn't been resolved (→ YT fallback in UI).
+  useEffect(() => {
+    if (singing?.song_id) {
+      api.getLibrarySong(singing.song_id).then(setActiveSong).catch(() => setActiveSong(null));
+    } else {
+      setActiveSong(null);
+    }
+  }, [singing?.song_id]);
+  // Load the saved lyrics style once (admins set it from the Admin page).
+  useEffect(() => {
+    const adminTok = localStorage.getItem("djclaude.admin_token");
+    if (!adminTok) return;
+    api.getSettings(adminTok).then((s: AppSettings) => {
+      if (s.player_lyrics_style) setLyricsStyle(s.player_lyrics_style);
+    }).catch(() => {});
+  }, []);
+
   const queue = useMemo(
     () =>
       requests
@@ -281,6 +321,23 @@ export function Host({ code }: Props) {
           </span>
         </div>
       </header>
+
+      {/* Karaoke player — only mounts when there's a "now singing" request */}
+      {singing && (
+        <section class="w-full max-w-[1600px] mx-auto px-gutter pt-md">
+          {!singing.song_id && singing.youtube_video_id ? (
+            <YouTubeFallbackPlayer videoID={singing.youtube_video_id} mode="host" />
+          ) : (
+            <KaraokePlayer
+              song={activeSong}
+              mode="host"
+              lyricsStyle={lyricsStyle}
+              autoPlay={true}
+              onVideoRef={(v) => { videoElRef.current = v; }}
+            />
+          )}
+        </section>
+      )}
 
       {/* Main layout */}
       <main class="flex-grow flex flex-col md:flex-row w-full max-w-[1600px] mx-auto p-4 md:p-gutter gap-md md:h-[calc(100vh-80px)] md:overflow-hidden">
