@@ -1,0 +1,73 @@
+# Local development stack: API + worker on the same box.
+# Worker uses the NVIDIA GPU via the nvidia-container-toolkit (must be
+# installed on the host; see README).
+#
+# Usage:
+#   docker compose up --build       # foreground
+#   docker compose up -d            # detached
+#
+# Volumes:
+#   ./media         → ./media in api + worker (shared file store)
+#   ./karaoke.db    → karaoke.db in both (shared SQLite, WAL mode)
+#   hf_cache        → /cache in worker (HuggingFace weights, persists across builds)
+
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: karaoke-api
+    ports:
+      - "8080:8080"
+    environment:
+      ADDR: ":8080"
+      DATABASE_PATH: /data/karaoke.db
+      STATIC_DIR: /app/frontend/dist
+      MEDIA_DIR: /data/media
+      WORKER_URL: http://worker:8090
+      WORKER_TOKEN: ${WORKER_TOKEN:-change-me-shared-secret}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+    volumes:
+      - ./media:/data/media
+      - ./karaoke.db:/data/karaoke.db
+    depends_on:
+      - worker
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    container_name: karaoke-worker
+    ports:
+      - "8090:8090"
+    environment:
+      WORKER_TOKEN: ${WORKER_TOKEN:-change-me-shared-secret}
+      WORKER_PORT: "8090"
+      WORKER_DEVICE: ${WORKER_DEVICE:-auto}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
+      WORKER_COMPUTE_TYPE: ${WORKER_COMPUTE_TYPE:-float16}
+      DEMUCS_MODEL: ${DEMUCS_MODEL:-htdemucs_ft}
+      WHISPER_MODEL: ${WHISPER_MODEL:-large-v3}
+      DATABASE_PATH: /data/karaoke.db
+      MEDIA_DIR: /data/media
+      API_BASE_URL: http://api:8080
+    volumes:
+      - ./media:/data/media
+      - ./karaoke.db:/data/karaoke.db
+      - hf_cache:/cache
+    # Requires nvidia-container-toolkit on the host. If you don't have a GPU,
+    # comment out this block and set WORKER_DEVICE=cpu above.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  hf_cache:

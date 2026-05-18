@@ -1,0 +1,31 @@
+# VPS stack: API only. No worker — processing happens on your local box;
+# deploy-to-vps.sh syncs the media folder + DB up here.
+#
+# Designed for cheap VPS specs (1 vCPU / 1 GB RAM is plenty).
+#
+# Usage (on the VPS):
+#   docker compose -f docker-compose.vps.yml up -d
+
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: karaoke-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADDR: ":8080"
+      DATABASE_PATH: /data/karaoke.db
+      STATIC_DIR: /app/frontend/dist
+      MEDIA_DIR: /data/media
+      # No worker on the VPS — leave WORKER_URL blank so kickWorker is a no-op
+      # and /api/health/worker reports unavailable.
+      WORKER_URL: ""
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+    volumes:
+      - ./media:/data/media
+      - ./karaoke.db:/data/karaoke.db

@@ -33,10 +33,16 @@ type subscriber struct {
 	host bool
 }
 
+// InboundHandler is invoked for every text message a subscriber sends to the
+// hub. Wire it via SetInboundHandler. Return value is ignored — handlers
+// should silently drop unknown types.
+type InboundHandler func(eventCode string, isHost bool, raw []byte) bool
+
 type Hub struct {
 	mu          sync.RWMutex
 	subscribers map[string]map[*subscriber]struct{} // by event code
 	upgrader    websocket.Upgrader
+	onInbound   InboundHandler
 }
 
 func NewHub() *Hub {
@@ -48,6 +54,14 @@ func NewHub() *Hub {
 			CheckOrigin:     func(r *http.Request) bool { return true },
 		},
 	}
+}
+
+// SetInboundHandler installs a callback invoked for each text message from
+// a subscriber. The API package wires this to dispatch playback:state etc.
+func (h *Hub) SetInboundHandler(fn InboundHandler) {
+	h.mu.Lock()
+	h.onInbound = fn
+	h.mu.Unlock()
 }
 
 // Broadcast fans the event out to every subscriber of the given event code.
@@ -108,16 +122,27 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, eventCode string, ho
 
 func (h *Hub) readPump(eventCode string, sub *subscriber) {
 	defer h.drop(eventCode, sub)
-	sub.conn.SetReadLimit(4096)
+	// Bigger limit now — playback:state messages from the host include song
+	// metadata and timestamps; still tiny but the v1 4 KB ceiling was tight.
+	sub.conn.SetReadLimit(16 * 1024)
 	_ = sub.conn.SetReadDeadline(time.Now().Add(pongWait))
 	sub.conn.SetPongHandler(func(string) error {
 		return sub.conn.SetReadDeadline(time.Now().Add(pongWait))
 	})
 	for {
-		if _, _, err := sub.conn.ReadMessage(); err != nil {
+		mt, msg, err := sub.conn.ReadMessage()
+		if err != nil {
 			return
 		}
-		// We don't expect client-to-server messages in v1.
+		if mt != websocket.TextMessage {
+			continue
+		}
+		h.mu.RLock()
+		handler := h.onInbound
+		h.mu.RUnlock()
+		if handler != nil {
+			handler(eventCode, sub.host, msg)
+		}
 	}
 }
 

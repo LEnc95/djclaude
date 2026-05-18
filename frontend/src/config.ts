@@ -25,3 +25,10 @@ export function wsURL(path: string): string {
 export function apiURL(path: string): string {
   return API_BASE ? API_BASE + path : path;
 }
+
+// /media/* file URLs (instrumental .webm, lyrics .json, thumbnails).
+// `path` is the relative DB-stored path like "instr/abc123.webm".
+export function mediaURL(path: string): string {
+  const clean = path.replace(/^\/+/, "");
+  return API_BASE ? `${API_BASE}/media/${clean}` : `/media/${clean}`;
+}

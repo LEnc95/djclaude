@@ -24,6 +24,7 @@ type RequestFilter struct {
 type Store interface {
 	CreateEvent(ctx context.Context, e models.Event) error
 	GetEventByCode(ctx context.Context, code string) (models.Event, error)
+	GetEventByID(ctx context.Context, id string) (models.Event, error)
 	UpdateEvent(ctx context.Context, e models.Event) error
 
 	CreateRequest(ctx context.Context, r models.Request) error

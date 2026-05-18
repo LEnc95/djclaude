@@ -1,0 +1,39 @@
+[project]
+name = "djclaude-worker"
+version = "0.1.0"
+description = "Karaoke processing pipeline: yt-dlp + Demucs + WhisperX"
+requires-python = ">=3.10,<3.12"
+
+# Pinned: CUDA 12.1 wheels. PyTorch 2.3.x is the last that plays nicely with
+# both demucs and whisperx as of late 2025. Bump only when both projects
+# confirm compatibility.
+dependencies = [
+    "fastapi==0.115.5",
+    "uvicorn[standard]==0.32.1",
+    "httpx==0.27.2",
+    "python-multipart==0.0.12",
+    "pydantic==2.9.2",
+    "pydantic-settings==2.6.1",
+
+    "torch==2.3.1",
+    "torchaudio==2.3.1",
+
+    "demucs==4.0.1",
+    "whisperx==3.1.5",
+    "faster-whisper==1.0.3",
+
+    "yt-dlp==2024.11.18",
+    "mutagen==1.47.0",
+
+    "Pillow==11.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["ruff==0.7.4", "pytest==8.3.3"]
+
+# Use the PyTorch CUDA 12.1 index when installing:
+#   pip install -e . --extra-index-url https://download.pytorch.org/whl/cu121
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

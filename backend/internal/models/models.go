@@ -59,6 +59,7 @@ type Request struct {
 	YoutubeURL     string        `json:"youtube_url"`
 	YoutubeVideoID string        `json:"youtube_video_id,omitempty"`
 	SongTitle      string        `json:"song_title,omitempty"`
+	SongID         string        `json:"song_id,omitempty"` // FK to songs.id; empty = fallback to YT
 	Notes          string        `json:"notes,omitempty"`
 	Status         RequestStatus `json:"status"`
 	RotationIndex  int           `json:"rotation_index"` // singer's nth song this event

@@ -1,4 +1,4 @@
-import type { WSEvent } from "./types";
+import type { PlaybackState, WSEvent } from "./types";
 import { wsURL } from "./config";
 
 export interface WSOptions {
@@ -8,12 +8,31 @@ export interface WSOptions {
   onStatus?: (s: "connecting" | "open" | "closed") => void;
 }
 
-// Tiny auto-reconnecting WebSocket client. Backoff doubles up to 8s.
-export function connectWS(opts: WSOptions): () => void {
+// WSClient: tiny auto-reconnecting WebSocket that also exposes outbound
+// send helpers (the host pushes playback:state via this). Backoff doubles
+// up to 8s.
+export interface WSClient {
+  send(msg: WSOutbound): void;
+  close(): void;
+}
+
+export type WSOutbound =
+  | { type: "playback:state"; payload: Omit<PlaybackState, "server_ts"> }
+  | { type: "playback:load"; payload: { request_id?: string; song_id?: string } }
+  | { type: "ping"; payload: {} };
+
+export function connectWS(opts: WSOptions): WSClient {
   let stopped = false;
   let ws: WebSocket | null = null;
   let retry = 0;
   let reconnectTimer: number | undefined;
+  let pendingOutbound: WSOutbound[] = [];
+
+  const flush = () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    for (const m of pendingOutbound) ws.send(JSON.stringify(m));
+    pendingOutbound = [];
+  };
 
   const open = () => {
     if (stopped) return;
@@ -24,6 +43,7 @@ export function connectWS(opts: WSOptions): () => void {
     ws.onopen = () => {
       retry = 0;
       opts.onStatus?.("open");
+      flush();
     };
     ws.onmessage = (msg) => {
       try {
@@ -44,9 +64,21 @@ export function connectWS(opts: WSOptions): () => void {
 
   open();
 
-  return () => {
-    stopped = true;
-    if (reconnectTimer) clearTimeout(reconnectTimer);
-    ws?.close();
+  return {
+    send(m) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(m));
+      } else {
+        // Buffer until the next open. The host's playback:state is sent at
+        // ~2 Hz; missing a tick or two during reconnect is harmless.
+        pendingOutbound.push(m);
+        if (pendingOutbound.length > 16) pendingOutbound = pendingOutbound.slice(-16);
+      }
+    },
+    close() {
+      stopped = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      ws?.close();
+    },
   };
 }

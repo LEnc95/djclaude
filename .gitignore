@@ -8,3 +8,18 @@ djclaude
 djclaude.exe
 .env
 .DS_Store
+
+# Python worker
+worker/.venv/
+**/__pycache__/
+*.pyc
+*.egg-info/
+worker-cache/
+
+# Processed media (huge; user-owned content, not source)
+media/
+
+# Editor / agent state
+.claude/
+.idea/
+.vscode/
