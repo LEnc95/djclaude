@@ -1,4 +1,5 @@
-"""yt-dlp wrapper with retry, rate-limit, and metadata extraction."""
+"""yt-dlp wrapper with retry, rate-limit, multi-candidate fallback, and
+metadata extraction."""
 from __future__ import annotations
 
 import logging
@@ -26,6 +27,20 @@ class DownloadResult:
 
 class DownloadError(RuntimeError):
     pass
+
+
+# Some yt-dlp errors are forever-fatal for a specific video. The runner's
+# higher-level error classifier uses _FATAL_YT_PATTERNS too; this list is
+# just for the per-candidate skip decision inside download().
+_PER_CANDIDATE_SKIP = (
+    "video unavailable",
+    "removed by the user",
+    "private video",
+    "blocked it in your country",
+    "members-only",
+    "sign in to confirm",
+    "age",
+)
 
 
 def _guess_artist_title(info: dict) -> tuple[str, str]:
@@ -61,11 +76,94 @@ def download(
 ) -> DownloadResult:
     """Download the best audio for `url` into the worker cache.
 
-    Returns the local audio path plus parsed metadata. Raises DownloadError
-    on terminal failure (yt-dlp's own retry exhausted).
+    If `url` is a `ytsearchN:` search expression, we fetch the top N
+    candidates and try them in order until one downloads cleanly — handy
+    when the first hit is region-blocked, age-gated, or removed. Direct
+    `https://www.youtube.com/watch?v=...` URLs skip the fallback loop and
+    download the single target.
+
+    Raises DownloadError if every candidate fails.
     """
     out_dir = settings.cache_dir / "downloads" / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    candidates = _resolve_candidates(url)
+    if not candidates:
+        raise DownloadError(f"no candidates resolved from URL: {url}")
+
+    last_err: Exception | None = None
+    for i, cand_url in enumerate(candidates, start=1):
+        try:
+            log.info("download attempt %d/%d for job %s: %s",
+                     i, len(candidates), job_id, cand_url)
+            # Reset progress for each candidate so the UI doesn't show 90%
+            # then "failed" — it shows fresh progress for the new attempt.
+            return _download_one(cand_url, out_dir, progress)
+        except yt_dlp.utils.DownloadError as e:
+            msg = str(e)
+            last_err = e
+            skip = any(p in msg.lower() for p in _PER_CANDIDATE_SKIP)
+            log.warning("candidate %d/%d failed%s: %s",
+                        i, len(candidates),
+                        " (skip-and-try-next)" if skip else "",
+                        msg.split('\n')[0][:200])
+            continue
+        except Exception as e:
+            last_err = e
+            log.warning("candidate %d/%d unexpected error: %s", i, len(candidates), e)
+            continue
+
+    raise DownloadError(
+        f"all {len(candidates)} candidate(s) failed for {url}; last error: {last_err}"
+    )
+
+
+def _resolve_candidates(url: str, fanout: int = 5) -> list[str]:
+    """Turn a single submitted URL into one or more watchable URLs.
+
+    - `ytsearch1:foo` -> expand to up to N watch URLs (top N results)
+    - `ytsearchN:foo` -> use N as the fanout
+    - direct watch URL -> single-element list (no fallback)
+    """
+    if url.startswith("ytsearch") and ":" in url:
+        prefix, query = url.split(":", 1)
+        # prefix is like "ytsearch", "ytsearch1", "ytsearch5"; expand to fanout
+        search_url = f"ytsearch{fanout}:{query}"
+        with yt_dlp.YoutubeDL({
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": True,    # don't fetch full info per result — fast
+            "noplaylist": False,
+        }) as ydl:
+            try:
+                info = ydl.extract_info(search_url, download=False)
+            except Exception as e:
+                log.warning("search resolution failed for %s: %s", search_url, e)
+                return []
+        entries = info.get("entries") or []
+        urls = []
+        for e in entries:
+            if not e:
+                continue
+            u = e.get("url") or e.get("webpage_url") or e.get("original_url")
+            if not u:
+                vid = e.get("id")
+                if vid:
+                    u = f"https://www.youtube.com/watch?v={vid}"
+            if u:
+                urls.append(u)
+        return urls
+    # Direct URL
+    return [url]
+
+
+def _download_one(
+    url: str,
+    out_dir: Path,
+    progress: Callable[[float], None],
+) -> DownloadResult:
+    """Single yt-dlp invocation. Raises yt_dlp.utils.DownloadError on
+    failure; caller decides whether to skip to the next candidate."""
 
     def _hook(d: dict) -> None:
         if d.get("status") == "downloading":
@@ -76,17 +174,23 @@ def download(
 
     ydl_opts: dict = {
         "format": settings.yt_dlp_format,
-        "outtmpl": str(out_dir / "%(id)s.%(ext)s"),
+        # outtmpl is just the filename; the actual directory comes from `paths`.
+        "outtmpl": "%(id)s.%(ext)s",
+        # paths.home + paths.temp override ALL output directories (final,
+        # temp, thumbnail, info-json). Without this, writethumbnail and the
+        # postprocessor fall through to cwd → "[Errno 13] Permission
+        # denied: '.'" when the worker's cwd isn't writable.
+        "paths": {"home": str(out_dir), "temp": str(out_dir)},
         "quiet": True,
         "no_warnings": True,
         "noprogress": True,
-        "retries": 5,
-        "fragment_retries": 5,
+        "retries": 3,
+        "fragment_retries": 3,
         "progress_hooks": [_hook],
         "writethumbnail": True,
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
-            "preferredcodec": "wav",  # uncompressed → cleanest input to Demucs
+            "preferredcodec": "wav",
         }],
     }
     if settings.yt_dlp_rate_limit:
@@ -94,19 +198,15 @@ def download(
     if settings.yt_dlp_cookies_file:
         ydl_opts["cookiefile"] = str(settings.yt_dlp_cookies_file)
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-    except yt_dlp.utils.DownloadError as e:
-        raise DownloadError(str(e)) from e
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
 
     video_id = info["id"]
     audio_path = out_dir / f"{video_id}.wav"
     if not audio_path.exists():
-        # FFmpegExtractAudio renames; find whichever .wav landed in out_dir
-        wavs = list(out_dir.glob("*.wav"))
+        wavs = list(out_dir.glob(f"{video_id}*.wav")) or list(out_dir.glob("*.wav"))
         if not wavs:
-            raise DownloadError(f"audio not found after download: {out_dir}")
+            raise yt_dlp.utils.DownloadError(f"audio not found after download in {out_dir}")
         audio_path = wavs[0]
 
     artist, title = _guess_artist_title(info)
