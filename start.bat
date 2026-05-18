@@ -62,8 +62,10 @@ REM    server's findProjectRoot() walks up from there to locate .env.
 start "Karaoke API (Go)" cmd /k "cd /d %~dp0backend && go run ./cmd/server"
 
 REM 2. Python worker. Stay at project root so worker/__init__.py is
-REM    discoverable as the `worker` package.
-start "Karaoke Worker (Python)" cmd /k "cd /d %~dp0 && worker\.venv\Scripts\python.exe -m worker.main"
+REM    discoverable as the `worker` package. KMP_DUPLICATE_LIB_OK silences
+REM    the Intel OpenMP "libiomp5md.dll already initialized" abort that
+REM    fires when both torch (MKL OMP) and ctranslate2 (own OMP) load.
+start "Karaoke Worker (Python)" cmd /k "cd /d %~dp0 && set KMP_DUPLICATE_LIB_OK=TRUE&& worker\.venv\Scripts\python.exe -m worker.main"
 
 REM 3. Vite (only in dev mode)
 if /I "%MODE%"=="dev" (

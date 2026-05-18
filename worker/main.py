@@ -6,11 +6,19 @@ when debugging) can probe its state.
 """
 from __future__ import annotations
 
+# IMPORTANT: must be set BEFORE torch/ctranslate2/onnxruntime get imported.
+# On Windows we hit "OMP Error #15: libiomp5md.dll already initialized" because
+# torch's bundled MKL and faster-whisper's ctranslate2 both ship their own
+# OpenMP runtime. This env var tells Intel's OMP to allow the duplicate
+# instead of aborting the process.
+import os
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 import asyncio
 import logging
-import os
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import torch
 from fastapi import FastAPI, Header, HTTPException
@@ -18,12 +26,28 @@ from fastapi import FastAPI, Header, HTTPException
 from . import db, runner
 from .settings import settings
 
+# Two log handlers: stdout (for `start.bat`'s visible cmd window) AND a
+# rolling file in cache_dir/worker.log so logs survive even when the
+# parent terminal exits. The latter matters on Windows where any
+# PowerShell Start-Process with redirected stdout will silently kill its
+# child the moment the parent session moves on.
+_log_dir = Path(os.environ.get("WORKER_LOG_DIR") or os.environ.get("MEDIA_DIR") or ".").resolve()
+try:
+    _log_path = _log_dir / "worker.log"
+    _log_path.parent.mkdir(parents=True, exist_ok=True)
+except Exception:
+    _log_path = Path("worker.log")
+
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s %(levelname)s %(name)s — %(message)s",
-    stream=sys.stdout,
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(_log_path, encoding="utf-8"),
+    ],
 )
 log = logging.getLogger("worker")
+log.info("worker log file: %s", _log_path)
 
 
 # ---- background loop ----
