@@ -173,11 +173,14 @@ if errorlevel 1 (
 
 REM Stage B: demucs's runtime Python deps. Pre-install the safe ones
 REM (julius, einops, etc.) but SKIP openunmix — that's the transitive dep
-REM that pulls in PyAV. Demucs works without openunmix at inference time;
-REM openunmix is only referenced in demucs's training code paths.
+REM that pulls in PyAV. Demucs works without openunmix at inference time.
+REM
+REM IMPORTANT: --prefer-binary, NOT --only-binary=:all:. julius is pure
+REM Python and ships sdist-only on PyPI (no wheel needed — no compilation).
+REM --only-binary=:all: would reject it with "from versions: none".
 echo   stage B: installing demucs runtime deps ^(skipping openunmix/PyAV^)...
-python -m pip install --only-binary=:all: ^
-    julius einops pyyaml tqdm omegaconf hydra-core treelib diffq dora-search ^
+python -m pip install --prefer-binary ^
+    julius einops pyyaml tqdm omegaconf diffq dora-search ^
     lameenc
 if errorlevel 1 (
     echo.
