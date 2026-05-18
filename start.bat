@@ -43,6 +43,15 @@ echo.
 echo === Karaoke Forever Pro — starting stack ===
 echo.
 
+REM Force both processes to share the same DB + media dir via absolute
+REM paths anchored at this script's location. Without this, the Go server
+REM (cwd = backend/) creates backend\karaoke.db while the worker reads
+REM .\karaoke.db from the project root — two different files, and the
+REM worker bails with "no such table: jobs".
+set "DB_PATH=%~dp0karaoke.db"
+set "MEDIA_PATH=%~dp0media"
+if not exist "%MEDIA_PATH%" mkdir "%MEDIA_PATH%"
+
 REM Detect LAN IP for the on-screen "guests connect here" hint.
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /R /C:"IPv4.*[0-9]"') do (
     set LANIP=%%a
@@ -51,13 +60,13 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /R /C:"IPv4.*[0-9]"') do
 :got_ip
 set LANIP=%LANIP: =%
 
-REM 1. Go API
-start "Karaoke API (Go)"      cmd /k "cd /d %~dp0backend && go run ./cmd/server"
+REM 1. Go API — inherit DB_PATH + MEDIA_PATH so it matches the worker.
+start "Karaoke API (Go)" cmd /k "cd /d %~dp0backend && set DATABASE_PATH=%DB_PATH%&& set MEDIA_DIR=%MEDIA_PATH%&& go run ./cmd/server"
 
 REM 2. Python worker. Stay at project root so `worker/__init__.py` is
 REM discoverable as the `worker` package — don't cd into worker/, that
 REM makes Python look for worker/worker/__init__.py which doesn't exist.
-start "Karaoke Worker (Python)" cmd /k "cd /d %~dp0 && worker\.venv\Scripts\python.exe -m worker.main"
+start "Karaoke Worker (Python)" cmd /k "cd /d %~dp0 && set DATABASE_PATH=%DB_PATH%&& set MEDIA_DIR=%MEDIA_PATH%&& worker\.venv\Scripts\python.exe -m worker.main"
 
 REM 3. Vite (only in dev mode)
 if /I "%MODE%"=="dev" (
