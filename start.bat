@@ -54,8 +54,10 @@ set LANIP=%LANIP: =%
 REM 1. Go API
 start "Karaoke API (Go)"      cmd /k "cd /d %~dp0backend && go run ./cmd/server"
 
-REM 2. Python worker
-start "Karaoke Worker (Python)" cmd /k "cd /d %~dp0worker && call .venv\Scripts\activate.bat && python -m worker.main"
+REM 2. Python worker. Stay at project root so `worker/__init__.py` is
+REM discoverable as the `worker` package — don't cd into worker/, that
+REM makes Python look for worker/worker/__init__.py which doesn't exist.
+start "Karaoke Worker (Python)" cmd /k "cd /d %~dp0 && worker\.venv\Scripts\python.exe -m worker.main"
 
 REM 3. Vite (only in dev mode)
 if /I "%MODE%"=="dev" (
