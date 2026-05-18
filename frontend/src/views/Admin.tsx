@@ -7,6 +7,7 @@ import { AdminLogin } from "../components/AdminLogin";
 import { JobBadge } from "../components/JobBadge";
 import { BulkImportModal } from "../components/BulkImportModal";
 import { LyricsStyleEditor } from "../components/LyricsStyleEditor";
+import { KaraokePlayer } from "../components/KaraokePlayer";
 import { DEFAULT_LYRICS_STYLE } from "../lyrics/presets";
 
 type Tab = "library" | "queue" | "imports" | "player" | "settings" | "deploy";
@@ -201,6 +202,9 @@ function LibraryTab({ adminToken }: { adminToken: string }) {
   const [q, setQ] = useState("");
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(false);
+  // Direct-play state — no event/request flow needed
+  const [nowPlaying, setNowPlaying] = useState<Song | null>(null);
+  const [style, setStyle] = useState<LyricsStyle>(DEFAULT_LYRICS_STYLE);
 
   async function refresh() {
     setLoading(true);
@@ -212,6 +216,36 @@ function LibraryTab({ adminToken }: { adminToken: string }) {
     }
   }
   useEffect(() => { refresh(); }, [q]);
+  useEffect(() => {
+    // Pull the saved lyrics style once so direct-play looks the same as
+    // what the host/screen players will use.
+    api.getSettings(adminToken)
+      .then((s) => { if (s.player_lyrics_style) setStyle(s.player_lyrics_style); })
+      .catch(() => {});
+  }, []);
+
+  // ESC closes the player modal
+  useEffect(() => {
+    if (!nowPlaying) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setNowPlaying(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [nowPlaying]);
+
+  async function play(s: Song) {
+    // Refetch with primary_media inlined (list endpoint already does this,
+    // but be defensive — older snapshots may be missing it).
+    if (s.primary_media) {
+      setNowPlaying(s);
+      return;
+    }
+    try {
+      const full = await api.getLibrarySong(s.id);
+      setNowPlaying(full);
+    } catch {
+      setNowPlaying(s);
+    }
+  }
 
   async function del(id: string) {
     if (!confirm("Delete this song from the library? Files will be removed.")) return;
@@ -241,13 +275,44 @@ function LibraryTab({ adminToken }: { adminToken: string }) {
                 <td>{s.artist}</td>
                 <td>{s.year ?? ""}</td>
                 <td><span class={`song-status song-status--${s.status}`}>{s.status}</span></td>
-                <td><button onClick={() => del(s.id)}>Delete</button></td>
+                <td style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    disabled={s.status !== "ready"}
+                    title={s.status !== "ready" ? "Not processed yet" : "Play in modal"}
+                    onClick={() => play(s)}
+                  >▶ Play</button>
+                  <button onClick={() => del(s.id)}>Delete</button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
         {songs.length === 0 && !loading && <p class="muted">No songs yet.</p>}
       </section>
+
+      {nowPlaying && (
+        <div class="player-modal" onClick={() => setNowPlaying(null)}>
+          <div class="player-modal__inner" onClick={(e) => e.stopPropagation()}>
+            <div class="player-modal__head">
+              <div>
+                <strong>{nowPlaying.title}</strong>
+                <span class="muted"> — {nowPlaying.artist}</span>
+              </div>
+              <button onClick={() => setNowPlaying(null)} aria-label="Close">✕</button>
+            </div>
+            <div class="player-modal__stage">
+              <KaraokePlayer
+                song={nowPlaying}
+                mode="host"
+                lyricsStyle={style}
+              />
+            </div>
+            <p class="muted player-modal__hint">
+              Press ESC or click outside to close. Audio plays unmuted on this device.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
