@@ -152,8 +152,19 @@ if errorlevel 1 (
     popd & pause & exit /b 1
 )
 
+REM Pre-install av (PyAV) from a binary wheel. On Windows + Python 3.11
+REM demucs 4.0.1 otherwise tries to compile av against ffmpeg dev libs the
+REM user doesn't have, blowing up on missing avformat.lib.
+echo   pre-installing av binary wheel ^(avoids a source build^)...
+python -m pip install --only-binary=av av >NUL
+if errorlevel 1 (
+    echo av wheel pre-install failed.
+    call .venv\Scripts\deactivate.bat
+    popd & pause & exit /b 1
+)
+
 echo   installing worker + torch ^(cu121^) - go grab a coffee, ~5-15 min...
-python -m pip install -e . --extra-index-url https://download.pytorch.org/whl/cu121
+python -m pip install -e . --extra-index-url https://download.pytorch.org/whl/cu121 --prefer-binary
 if errorlevel 1 (
     echo.
     echo Worker install FAILED.
