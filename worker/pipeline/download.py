@@ -163,8 +163,32 @@ def _download_one(
     progress: Callable[[float], None],
 ) -> DownloadResult:
     """Single yt-dlp invocation. Raises yt_dlp.utils.DownloadError on
-    failure; caller decides whether to skip to the next candidate."""
+    failure; caller decides whether to skip to the next candidate.
 
+    Defensive: chdir into out_dir for the duration of the call. ffmpeg's
+    postprocessor (FFmpegExtractAudio) shells out and uses cwd for its
+    own temp files; if the worker's process cwd is somewhere unwritable
+    we get a confusing '[Errno 13] Permission denied: .' that no amount
+    of yt-dlp `paths` config can fix. Pinning cwd to a per-job writable
+    dir makes both yt-dlp AND ffmpeg behave.
+    """
+    import os
+    prev_cwd = os.getcwd()
+    try:
+        os.chdir(out_dir)
+        return _download_one_inner(url, out_dir, progress)
+    finally:
+        try:
+            os.chdir(prev_cwd)
+        except OSError:
+            pass
+
+
+def _download_one_inner(
+    url: str,
+    out_dir: Path,
+    progress: Callable[[float], None],
+) -> DownloadResult:
     def _hook(d: dict) -> None:
         if d.get("status") == "downloading":
             total = d.get("total_bytes") or d.get("total_bytes_estimate")

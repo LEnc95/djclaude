@@ -56,6 +56,15 @@ async def _loop():
 async def lifespan(_app: FastAPI):
     settings.media_dir.mkdir(parents=True, exist_ok=True)
     settings.cache_dir.mkdir(parents=True, exist_ok=True)
+    # Pin process cwd to the cache dir so any child process (ffmpeg via
+    # yt-dlp's postprocessor, demucs subprocess) that uses cwd-relative
+    # paths writes somewhere writable. The Permission-denied-on-`.`
+    # issue on Windows comes from ffmpeg inheriting whatever cwd the
+    # worker was spawned with — which on PowerShell Start-Process can be
+    # surprising.
+    import os
+    os.chdir(settings.cache_dir)
+    log.info("worker cwd pinned to %s", settings.cache_dir)
     task = asyncio.create_task(_loop())
     try:
         yield
