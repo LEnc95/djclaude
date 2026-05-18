@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/lukeencrapera/djclaude/backend/internal/models"
 	"github.com/lukeencrapera/djclaude/backend/internal/store"
 )
 
@@ -33,14 +34,37 @@ func (s *Server) resolveRequest(ctx context.Context, videoID, title, artistHint 
 			return ResolveResult{SongID: m.SongID, MediaID: m.ID, PrimaryMediaID: m.ID}
 		}
 	}
-	// 2. Canonical hash, if we have both artist and title.
+
+	// 2. Split "Artist - Title" (what the guest autocomplete fills in) and
+	//    try canonical hashing each ordering. Catches the common case where
+	//    no explicit artistHint was given but the input string already
+	//    encodes both fields with a separator.
+	if artistHint == "" && strings.Contains(title, " - ") {
+		parts := strings.SplitN(title, " - ", 2)
+		if len(parts) == 2 {
+			left, right := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+			for _, pair := range [][2]string{{left, right}, {right, left}} {
+				hash := CanonicalHash(pair[0], pair[1])
+				if sg, err := s.store.GetSongByHash(ctx, hash); err == nil && sg.PrimaryMediaID != "" {
+					return ResolveResult{SongID: sg.ID, PrimaryMediaID: sg.PrimaryMediaID}
+				}
+			}
+		}
+	}
+
+	// 3. Canonical hash with an explicit artist hint (admin/API-driven submission).
 	if title != "" && artistHint != "" {
 		hash := CanonicalHash(artistHint, title)
 		if sg, err := s.store.GetSongByHash(ctx, hash); err == nil && sg.PrimaryMediaID != "" {
 			return ResolveResult{SongID: sg.ID, PrimaryMediaID: sg.PrimaryMediaID}
 		}
 	}
-	// 3. Fuzzy on combined free-text input.
+
+	// 4. Fuzzy: ALL-WORDS match on title+artist. We tokenize the query and
+	//    require every token to appear in either title or artist. That way
+	//    "Acoustic Lounge - Alanis Morissette" matches a song whose artist
+	//    is "Acoustic Lounge" and title is "Alanis Morissette" even though
+	//    no single field contains the whole literal string.
 	q := strings.TrimSpace(title)
 	if q == "" {
 		return ResolveResult{}
@@ -51,7 +75,55 @@ func (s *Server) resolveRequest(ctx context.Context, videoID, title, artistHint 
 	if err == nil && len(songs) > 0 && songs[0].PrimaryMediaID != "" {
 		return ResolveResult{SongID: songs[0].ID, PrimaryMediaID: songs[0].PrimaryMediaID}
 	}
+
+	// 5. All-tokens-anywhere fallback: split q into words, look for songs
+	//    where every word appears in (title || artist).
+	tokens := splitTokens(q)
+	if len(tokens) >= 2 {
+		if sg := s.findByAllTokens(ctx, tokens); sg != nil && sg.PrimaryMediaID != "" {
+			return ResolveResult{SongID: sg.ID, PrimaryMediaID: sg.PrimaryMediaID}
+		}
+	}
 	return ResolveResult{}
+}
+
+// splitTokens lowercases + strips punctuation + drops short noise.
+func splitTokens(s string) []string {
+	s = strings.ToLower(s)
+	s = hashPunct.ReplaceAllString(s, " ")
+	out := []string{}
+	for _, w := range hashWS.Split(s, -1) {
+		w = strings.TrimSpace(w)
+		if len(w) >= 3 { // drop "of", "to", "a"
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+// findByAllTokens iterates the small ready library checking each row for
+// "every token must appear in title or artist (case-insensitive)". For
+// realistic libraries (hundreds-low-thousands of songs) this is fine; if
+// the library grows huge we'd promote it to an FTS5 virtual table.
+func (s *Server) findByAllTokens(ctx context.Context, tokens []string) *models.Song {
+	songs, err := s.store.ListSongs(ctx, store.SongFilter{Status: "ready", Limit: 5000})
+	if err != nil {
+		return nil
+	}
+	for i := range songs {
+		hay := strings.ToLower(songs[i].Title + " " + songs[i].Artist)
+		all := true
+		for _, t := range tokens {
+			if !strings.Contains(hay, t) {
+				all = false
+				break
+			}
+		}
+		if all {
+			return &songs[i]
+		}
+	}
+	return nil
 }
 
 // =========================================================================

@@ -252,6 +252,7 @@ export function Guest({ code }: Props) {
                 song={activeSong}
                 mode="guest"
                 lyricsStyle={DEFAULT_LYRICS_STYLE}
+                autoPlay={true}
                 onVideoRef={(v) => { videoElRef.current = v; }}
               />
             )}

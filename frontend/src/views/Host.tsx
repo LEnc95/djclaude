@@ -332,6 +332,7 @@ export function Host({ code }: Props) {
               song={activeSong}
               mode="host"
               lyricsStyle={lyricsStyle}
+              autoPlay={true}
               onVideoRef={(v) => { videoElRef.current = v; }}
             />
           )}
