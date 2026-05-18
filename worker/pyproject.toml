@@ -10,9 +10,8 @@ requires-python = ">=3.10,<3.12"
 #
 # Install in stages — see setup.bat:
 #   stage A: core wheels (--only-binary=:all:)
-#   stage B: demucs's safe Python deps (skip openunmix → av)
-#   stage C: demucs with --no-deps
-#   stage D: editable install with --no-deps
+#   stage B: demucs + its non-PyAV deps with --no-deps
+#   stage C: editable install with --no-deps
 dependencies = [
     "fastapi==0.115.5",
     "uvicorn[standard]==0.32.1",
@@ -27,7 +26,10 @@ dependencies = [
     # Whisper inference + word-level timestamps in one package, all wheels.
     "faster-whisper>=1.0.3,<2",
 
-    "yt-dlp>=2024.11.18",
+    # YouTube updates its player signatures every few months; older yt-dlp
+    # silently fails with "Permission denied: '.'" when no formats are
+    # extractable. Pin to a known-current floor and let pip pull newer.
+    "yt-dlp>=2026.3.17",
     "mutagen==1.47.0",
 
     "Pillow==11.0.0",
