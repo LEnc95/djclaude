@@ -7,10 +7,12 @@ REM    1. Go API server (port 8080)
 REM    2. Python worker (port 8090)
 REM    3. (optional) Vite dev server for hot-reload (port 5173)
 REM
-REM  Then opens the admin page in your default browser.
+REM  Both processes auto-discover the project root by walking up to find
+REM  .env, so they always share the same karaoke.db and media/ regardless
+REM  of which directory they're launched from. No env vars to set here.
 REM
 REM  Usage:
-REM    start.bat            production-style: serves built frontend from Go (8080)
+REM    start.bat            production: Go serves the built frontend on 8080
 REM    start.bat dev        also starts Vite for hot-reload on 5173
 REM ============================================================================
 
@@ -20,12 +22,12 @@ cd /d "%~dp0"
 set MODE=%~1
 if "%MODE%"=="" set MODE=prod
 
-REM Sanity check the setup was run.
+REM Sanity checks.
 if not exist backend\go.sum (
     echo backend\go.sum missing. Run setup.bat first.
     pause & exit /b 1
 )
-if not exist worker\.venv\Scripts\activate.bat (
+if not exist worker\.venv\Scripts\python.exe (
     echo worker\.venv missing. Run setup.bat first.
     pause & exit /b 1
 )
@@ -43,14 +45,9 @@ echo.
 echo === Karaoke Forever Pro — starting stack ===
 echo.
 
-REM Force both processes to share the same DB + media dir via absolute
-REM paths anchored at this script's location. Without this, the Go server
-REM (cwd = backend/) creates backend\karaoke.db while the worker reads
-REM .\karaoke.db from the project root — two different files, and the
-REM worker bails with "no such table: jobs".
-set "DB_PATH=%~dp0karaoke.db"
-set "MEDIA_PATH=%~dp0media"
-if not exist "%MEDIA_PATH%" mkdir "%MEDIA_PATH%"
+REM Make sure the media dir exists at the project root before either
+REM process tries to write to it.
+if not exist "%~dp0media" mkdir "%~dp0media"
 
 REM Detect LAN IP for the on-screen "guests connect here" hint.
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /R /C:"IPv4.*[0-9]"') do (
@@ -60,13 +57,13 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /R /C:"IPv4.*[0-9]"') do
 :got_ip
 set LANIP=%LANIP: =%
 
-REM 1. Go API — inherit DB_PATH + MEDIA_PATH so it matches the worker.
-start "Karaoke API (Go)" cmd /k "cd /d %~dp0backend && set DATABASE_PATH=%DB_PATH%&& set MEDIA_DIR=%MEDIA_PATH%&& go run ./cmd/server"
+REM 1. Go API. We cd into backend/ so `go run` finds go.mod; the Go
+REM    server's findProjectRoot() walks up from there to locate .env.
+start "Karaoke API (Go)" cmd /k "cd /d %~dp0backend && go run ./cmd/server"
 
-REM 2. Python worker. Stay at project root so `worker/__init__.py` is
-REM discoverable as the `worker` package — don't cd into worker/, that
-REM makes Python look for worker/worker/__init__.py which doesn't exist.
-start "Karaoke Worker (Python)" cmd /k "cd /d %~dp0 && set DATABASE_PATH=%DB_PATH%&& set MEDIA_DIR=%MEDIA_PATH%&& worker\.venv\Scripts\python.exe -m worker.main"
+REM 2. Python worker. Stay at project root so worker/__init__.py is
+REM    discoverable as the `worker` package.
+start "Karaoke Worker (Python)" cmd /k "cd /d %~dp0 && worker\.venv\Scripts\python.exe -m worker.main"
 
 REM 3. Vite (only in dev mode)
 if /I "%MODE%"=="dev" (

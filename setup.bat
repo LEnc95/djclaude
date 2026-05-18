@@ -22,7 +22,15 @@ REM ----- 1. Prereq checks (auto-install via winget when missing) -----
 echo [1/6] Checking prerequisites...
 set MISSING=
 
-call :install_if_missing go      "GoLang.Go"               "C:\Program Files\Go\bin"
+REM Go gets a special path: if winget hangs or fails, we fall through to a
+REM direct ZIP install (no msiexec, no UAC, no installer service drama).
+where go >NUL 2>&1
+if errorlevel 1 (
+    call :install_go_smart
+) else (
+    for /f "delims=" %%V in ('go --version 2^>^&1') do echo   [found  ] go -- %%V
+)
+
 call :install_if_missing node    "OpenJS.NodeJS.LTS"       "C:\Program Files\nodejs"
 call :install_if_missing npm     ""                         ""
 call :install_if_missing ffmpeg  "Gyan.FFmpeg"              ""
@@ -308,6 +316,47 @@ if errorlevel 1 (
 )
 
 :install_if_missing_done
+goto :eof
+
+REM :install_go_smart
+REM   Try winget first (90-second timeout). If it hangs or fails, fall back
+REM   to downloading the latest Go ZIP from go.dev and extracting it to
+REM   %LOCALAPPDATA%\Programs\Go — no installer, no UAC, can't hang.
+:install_go_smart
+echo   [install] go - trying winget first...
+where winget >NUL 2>&1
+if not errorlevel 1 (
+    REM Run winget with a 90s wall clock; kill the orphan if it stalls.
+    powershell -NoProfile -Command "$p = Start-Process winget -ArgumentList 'install','--id','GoLang.Go','-e','--silent','--accept-package-agreements','--accept-source-agreements' -PassThru -WindowStyle Hidden; if (-not $p.WaitForExit(90000)) { try { $p.Kill() } catch {}; Get-Process msiexec -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; exit 1 }; exit $p.ExitCode"
+    if not errorlevel 1 (
+        call :refresh_path
+        if exist "C:\Program Files\Go\bin\go.exe" set "PATH=C:\Program Files\Go\bin;%PATH%"
+        where go >NUL 2>&1
+        if not errorlevel 1 (
+            for /f "delims=" %%V in ('go --version 2^>^&1') do echo   [found  ] go -- %%V  ^(via winget^)
+            goto :install_go_done
+        )
+    )
+    echo   [warn   ] winget install of Go failed or hung; falling back to direct ZIP
+)
+
+REM ZIP fallback: download the latest stable release straight from go.dev.
+echo   [install] go - downloading ZIP from go.dev ^(no admin needed^)...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; $rel = (Invoke-RestMethod 'https://go.dev/dl/?mode=json' -TimeoutSec 30)[0]; $f = $rel.files | Where-Object { $_.os -eq 'windows' -and $_.arch -eq 'amd64' -and $_.kind -eq 'archive' } | Select-Object -First 1; $url = 'https://go.dev/dl/' + $f.filename; $zip = $env:TEMP + '\' + $f.filename; $dst = $env:LOCALAPPDATA + '\Programs'; if (Test-Path ($dst + '\Go')) { Remove-Item ($dst + '\Go') -Recurse -Force }; Write-Host ('  downloading ' + $rel.version + ' ~' + [math]::Round($f.size/1MB,0) + ' MB'); Invoke-WebRequest $url -OutFile $zip -UseBasicParsing; if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }; Expand-Archive $zip $dst -Force; Remove-Item $zip -Force; $bin = $dst + '\Go\bin'; $up = [Environment]::GetEnvironmentVariable('Path','User'); if ($up -notlike ('*' + $bin + '*')) { [Environment]::SetEnvironmentVariable('Path', $bin + ';' + $up, 'User') }; Write-Host '  installed to ' $bin"
+if errorlevel 1 (
+    echo   [missing] go - ZIP fallback also failed. Check your internet connection.
+    set MISSING=1
+    goto :install_go_done
+)
+set "PATH=%LOCALAPPDATA%\Programs\Go\bin;%PATH%"
+where go >NUL 2>&1
+if errorlevel 1 (
+    echo   [missing] go - PATH update failed. Try restarting the terminal.
+    set MISSING=1
+) else (
+    for /f "delims=" %%V in ('go --version 2^>^&1') do echo   [found  ] go -- %%V  ^(via go.dev ZIP^)
+)
+:install_go_done
 goto :eof
 
 REM :refresh_path
