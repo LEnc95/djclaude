@@ -20,7 +20,9 @@ dependencies = [
 
     "demucs==4.0.1",
     "whisperx==3.1.5",
-    "faster-whisper==1.0.3",
+    # faster-whisper is pulled in transitively by whisperx; let whisperx
+    # decide the exact pin (3.1.5 wants ==1.0.1; pinning it ourselves
+    # makes pip refuse to resolve).
 
     "yt-dlp==2024.11.18",
     "mutagen==1.47.0",
