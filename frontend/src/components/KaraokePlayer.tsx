@@ -74,6 +74,16 @@ export function KaraokePlayer(props: Props) {
   }
 
   const muted = mode === "guest";
+  const shouldAutoplay = props.autoPlay ?? (mode === "screen");
+
+  // Even with the autoPlay attribute, some browsers gate audible playback
+  // unless we explicitly call .play() in response to a recent user gesture
+  // (e.g. clicking the "Play" button that opened this modal). Try; ignore
+  // the rejection — native controls still work as a manual fallback.
+  useEffect(() => {
+    if (!shouldAutoplay || !videoRef.current || !media) return;
+    videoRef.current.play().catch(() => {/* autoplay blocked, fall back to controls */});
+  }, [media?.id, shouldAutoplay]);
 
   return (
     <div class="karaoke-player">
@@ -86,7 +96,7 @@ export function KaraokePlayer(props: Props) {
         preload="auto"
         // controls only on host; guests can't pause for everyone
         controls={mode === "host"}
-        autoPlay={mode === "screen"}
+        autoPlay={shouldAutoplay}
       />
       <LyricsCanvas
         className="karaoke-player__lyrics"
