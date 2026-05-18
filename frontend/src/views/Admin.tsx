@@ -305,6 +305,7 @@ function LibraryTab({ adminToken }: { adminToken: string }) {
                 song={nowPlaying}
                 mode="host"
                 lyricsStyle={style}
+                autoPlay={true}
               />
             </div>
             <p class="muted player-modal__hint">

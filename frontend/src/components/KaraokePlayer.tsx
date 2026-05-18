@@ -9,6 +9,11 @@ interface Props {
   song: Song | null;            // null while loading or before any song selected
   mode: PlayerMode;
   lyricsStyle?: LyricsStyle;
+  // Force autoplay on mount. Defaults to true for "screen" mode; opt-in for
+  // others when the parent knows the action was user-initiated (clicking
+  // "Play" in the library, etc.) — that user gesture is what browsers
+  // require to allow audible autoplay.
+  autoPlay?: boolean;
   // host-only:
   onVideoRef?: (v: HTMLVideoElement | null) => void;
   // guest/screen-only: incoming remote state used to follow

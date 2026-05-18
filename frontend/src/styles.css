@@ -215,9 +215,11 @@
 }
 .karaoke-player__lyrics {
   position: absolute;
-  inset: 0;
+  /* Leave the bottom 60px clear so users can reach the native HTML5
+     <video controls> bar (play/pause/seek). Lyrics still render across
+     the upper 90+% of the frame, which is where they belong anyway. */
+  top: 0; left: 0; right: 0; bottom: 60px;
   width: 100%;
-  height: 100%;
   pointer-events: none;
 }
 .karaoke-player__placeholder {
