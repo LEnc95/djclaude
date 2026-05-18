@@ -92,11 +92,15 @@ class Settings(BaseSettings):
         if not self.cache_dir.is_absolute():
             self.cache_dir = _under_root(str(self.cache_dir))
         # CRITICAL: pydantic-settings parses an env var of "" (empty string)
-        # as Path(""), which Python silently treats as "." — when handed to
-        # yt-dlp as cookiefile it tries open(".", "r") → PermissionError.
-        # Same risk for any other Optional[Path] field that defaults blank.
+        # as the literal "" / Path("") instead of None. Downstream libs reject
+        # empties (faster_whisper rejects '' as a language code; yt-dlp tries
+        # to open '.' as a cookies file). Normalize any blank Optional fields.
         if self.yt_dlp_cookies_file and str(self.yt_dlp_cookies_file).strip() in ("", "."):
             self.yt_dlp_cookies_file = None
+        if self.whisper_language is not None and not str(self.whisper_language).strip():
+            self.whisper_language = None
+        if self.yt_dlp_rate_limit is not None and not str(self.yt_dlp_rate_limit).strip():
+            self.yt_dlp_rate_limit = None
 
 
 settings = Settings()

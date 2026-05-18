@@ -35,6 +35,7 @@ def _resolve_device() -> tuple[str, str]:
         return "cpu", "int8"
     if settings.worker_device == "cuda":
         return "cuda", settings.worker_compute_type
+    # auto
     if torch.cuda.is_available():
         return "cuda", settings.worker_compute_type
     return "cpu", "int8"
@@ -68,7 +69,8 @@ def transcribe(
           "duration": 213.4,
           "segments": [
             {
-              "start": 0.0, "end": 4.21,
+              "start": 0.0,
+              "end": 4.21,
               "text": "Coming out of my cage and I've been doing just fine",
               "words": [
                 {"word": "Coming", "start": 0.10, "end": 0.43, "score": 0.94},
@@ -82,16 +84,23 @@ def transcribe(
     model = _load_model()
     progress(0.10)
 
+    # Belt + suspenders for the empty-env-var → "" issue: faster_whisper's
+    # Tokenizer rejects '' but accepts None (= auto-detect).
+    lang = settings.whisper_language
+    if lang is not None and not str(lang).strip():
+        lang = None
+
     segments_iter, info = model.transcribe(
         str(audio_path),
         word_timestamps=True,
-        language=settings.whisper_language,  # None → auto-detect
+        language=lang,                       # None → auto-detect
         vad_filter=True,                     # skip non-vocal sections
         beam_size=5,
     )
 
     out_segments = []
     total_duration = float(info.duration or 0)
+    # faster-whisper yields segments lazily; iterate and emit progress
     for seg in segments_iter:
         words = []
         for w in (seg.words or []):
@@ -116,6 +125,7 @@ def transcribe(
         "segments": out_segments,
     }
 
+    # Aggressive GC keeps VRAM headroom for the next Demucs run.
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
