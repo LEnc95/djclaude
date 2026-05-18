@@ -1,9 +1,11 @@
-"""Render instrumental audio + static background image → .webm playable in browser.
+"""Render instrumental audio + background image + BURNED-IN karaoke lyrics
+into a standalone .webm playable in any browser or media player.
 
-We deliberately do NOT burn lyrics into the video. The frontend's
-LyricsCanvas overlays them against the lyrics JSON timestamps, so users can
-restyle (font, color, highlight) without re-rendering, and word-by-word
-highlighting works in real time.
+Lyrics are still kept as a separate JSON file so the live web player can
+do its own canvas-based word-highlighting overlay (and users can restyle
+without re-rendering). But the video file itself also has lyrics baked in
+via ASS subtitle karaoke timing tags — so when you download the .webm
+and play it locally, you see a real karaoke video.
 """
 from __future__ import annotations
 
@@ -70,44 +72,72 @@ def render_webm(
     out_path: Path,
     job_id: str,
     progress: Callable[[float], None],
+    lyrics: dict | None = None,
 ) -> None:
-    """Mux instrumental audio over a still-image video → .webm (VP9 + Opus).
+    """Mux instrumental audio + still-image background + burned-in karaoke
+    lyrics → .mp4 (H.264 high + AAC).
 
-    Single-frame still video + audio is ~3 MB per song at this bitrate.
+    Codec choice: H.264/AAC in an MP4 container. We previously used
+    VP9/Opus in WebM but Chrome's hardware decoder rejected it with
+    MEDIA_ERR_DECODE — libvpx-vp9 with our still-image inputs produces
+    streams Chrome's vp9 decoder won't touch even though ffmpeg and
+    standalone players are fine with them. H.264 + yuv420p is the most
+    universally decodable combination.
 
-    IMPORTANT: we probe the audio duration first and pass `-t` to ffmpeg
-    instead of using `-shortest`. With `-loop 1 -shortest`, ffmpeg's WebM
-    muxer leaves duration=N/A in the container, and browsers refuse to
-    .play() such files (they think the media has 0 length, so the play
-    button toggles right back to pause). With explicit `-t`, the duration
-    lands in the container header and playback works everywhere.
+    Other knobs:
+      - 24 fps, GOP every 48 frames (~2 s keyframes) — normal.
+      - Explicit -t duration (NOT -shortest) so the container records
+        duration metadata; browsers won't .play() if duration=N/A.
+      - +faststart so the moov atom is at the head of the file (seekable
+        before fully downloaded).
+      - ASS karaoke subtitles burned in, so a downloaded .mp4 is a real
+        standalone karaoke video — lyrics highlight word-by-word.
     """
     bg_path = settings.cache_dir / "bg" / f"{job_id}.jpg"
     _build_background(thumb_url, artist, title, bg_path)
-    progress(0.20)
+    progress(0.10)
 
     duration = _probe_duration(instrumental_path)
-    progress(0.30)
+    progress(0.15)
+
+    # Build ASS subtitles from the lyrics JSON, if we have them.
+    ass_path: Path | None = None
+    if lyrics:
+        from .subtitles import write_ass
+        ass_path = write_ass(lyrics, settings.cache_dir / "subs" / f"{job_id}.ass")
+        log.info("wrote ASS subtitles: %s", ass_path)
+        progress(0.20)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # ffmpeg filter graph: scale background to 1080p, then burn subtitles
+    # on top. The subtitles filter expects forward slashes + Windows drive
+    # escape (e.g. C\:/path/file.ass), even on Windows — that's an ffmpeg
+    # quirk, not a typo.
+    vf_parts = ["scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080"]
+    if ass_path:
+        ass_for_ffmpeg = str(ass_path).replace("\\", "/").replace(":", "\\:", 1)
+        vf_parts.append(f"subtitles='{ass_for_ffmpeg}'")
+
     cmd = [
         "ffmpeg", "-y",
-        "-loop", "1", "-framerate", "1", "-i", str(bg_path),
+        "-loop", "1", "-framerate", "24", "-i", str(bg_path),
         "-i", str(instrumental_path),
-        "-t", f"{duration:.3f}",   # explicit duration → muxer writes it
-        "-c:v", "libvpx-vp9",
-        "-b:v", "40k",
-        "-minrate", "20k",
-        "-maxrate", "80k",
-        "-r", "1",
-        "-g", "9999",
+        "-map", "0:v:0", "-map", "1:a:0",
+        "-t", f"{duration:.3f}",
+        "-vf", ",".join(vf_parts),
+        # H.264 + yuv420p decodes EVERYWHERE, unlike libvpx-vp9 which
+        # Chrome's hardware decoder rejected on our still-image streams.
+        "-c:v", "libx264",
+        "-profile:v", "high",
         "-pix_fmt", "yuv420p",
-        "-deadline", "good",
-        "-cpu-used", "4",
-        "-c:a", "libopus",
-        "-b:a", "96k",
-        "-vbr", "on",
-        "-application", "audio",
+        "-preset", "fast",
+        "-crf", "23",
+        "-r", "24",
+        "-g", "48",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        "-movflags", "+faststart",
         str(out_path),
     ]
     log.info("ffmpeg: %s", " ".join(cmd))
@@ -117,6 +147,8 @@ def render_webm(
         raise RenderError(f"ffmpeg failed: {e.stderr[-2000:]}") from e
 
     bg_path.unlink(missing_ok=True)
+    if ass_path and ass_path.exists():
+        ass_path.unlink(missing_ok=True)
     progress(1.0)
 
 

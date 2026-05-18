@@ -122,24 +122,19 @@ export function KaraokePlayer(props: Props) {
     };
   }, [media?.id]);
 
-  const bgUrl = media.thumb_path ? mediaURL(media.thumb_path) : null;
-
   return (
     <div class="karaoke-player">
-      {/* Static art background; CSS gradient fallback when no thumb. We
-          deliberately render a div instead of decoding our .webm's video
-          track because the pathological 1fps/single-keyframe stream our
-          ffmpeg pipeline emits trips MEDIA_ERR_DECODE in some Chromium
-          builds. The Opus AUDIO track is rock-solid; we play that. */}
-      <div
-        class="karaoke-player__bg"
-        style={bgUrl ? { backgroundImage: `url(${bgUrl})` } : undefined}
-      />
-      <audio
+      {/* Real karaoke video: 24 fps VP9 with burned-in ASS subtitle
+          karaoke fill. The canvas lyrics overlay below still runs on top
+          for the live-styled, word-precise highlight (the burned-in
+          subtitles are the persistent baseline that works when the file
+          is downloaded standalone). */}
+      <video
         ref={videoRef as any}
-        class="karaoke-player__audio"
+        class="karaoke-player__video"
         src={mediaURL(media.instrumental_path)}
         muted={muted}
+        playsInline
         preload="auto"
         controls={mode === "host"}
         autoPlay={shouldAutoplay}

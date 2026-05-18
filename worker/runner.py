@@ -86,19 +86,24 @@ def run_one_job() -> bool:
         # ----- 4. render -----
         _p("render", 0.0)
         media_id_hex = _short_id()
-        webm_rel = Path("instr") / f"{media_id_hex}.webm"
+        # H.264 in MP4 — see render_webm docstring for why we left VP9/WebM.
+        # The file/var names still say "webm" for legacy reasons; doesn't
+        # matter — the path goes into the DB as-is.
+        webm_rel = Path("instr") / f"{media_id_hex}.mp4"
         lyrics_rel = Path("lyrics") / f"{media_id_hex}.json"
         thumb_rel = Path("thumbs") / f"{media_id_hex}.jpg"
         webm_abs = settings.media_dir / webm_rel
         lyrics_abs = settings.media_dir / lyrics_rel
         thumb_abs = settings.media_dir / thumb_rel
 
+        # Write lyrics JSON FIRST so we can pass it to render for burn-in.
+        transcribe.write_lyrics_json(lyrics, lyrics_abs)
         render.render_webm(
             instrumental, dl.thumb_url, dl.artist, dl.title,
             webm_abs, job_id,
             progress=lambda f: _p("render", f),
+            lyrics=lyrics,
         )
-        transcribe.write_lyrics_json(lyrics, lyrics_abs)
         render.save_thumbnail(dl.thumb_url, thumb_abs)
 
         media_id = db.insert_media(
