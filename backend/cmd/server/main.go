@@ -47,6 +47,14 @@ func main() {
 
 	// Static frontend: serve index.html for any non-API/non-media path so the
 	// SPA router handles /r/:code, /host/:code, /admin, /screen/:code, etc.
+	//
+	// Caching policy:
+	//   - index.html: Cache-Control: no-cache (must revalidate). Without
+	//     this, browsers happily serve a months-old HTML referencing a
+	//     stale Vite-hashed JS filename, and users never see new releases
+	//     without manually clearing cache.
+	//   - /assets/index-<hash>.js|css: filenames are content-hashed by
+	//     Vite, so safe to cache forever — a new build = new filename.
 	staticDir, _ := filepath.Abs(cfg.StaticDir)
 	fs := http.FileServer(http.Dir(staticDir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -58,9 +66,21 @@ func main() {
 		}
 		path := filepath.Join(staticDir, filepath.FromSlash(r.URL.Path))
 		if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
+			// Hashed asset (Vite output: /assets/index-XXXX.js|css) — long cache.
+			if strings.HasPrefix(r.URL.Path, "/assets/") {
+				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			} else {
+				// Non-asset static file (favicon, robots.txt, etc.) — short cache.
+				w.Header().Set("Cache-Control", "public, max-age=300")
+			}
 			fs.ServeHTTP(w, r)
 			return
 		}
+		// SPA fallback → index.html. Always revalidate so new builds are
+		// picked up immediately without users having to clear their cache.
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
 		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 	})
 
