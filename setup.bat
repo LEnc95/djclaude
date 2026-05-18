@@ -152,19 +152,44 @@ if errorlevel 1 (
     popd & pause & exit /b 1
 )
 
-REM Pre-install av (PyAV) from a binary wheel. On Windows + Python 3.11
-REM demucs 4.0.1 otherwise tries to compile av against ffmpeg dev libs the
-REM user doesn't have, blowing up on missing avformat.lib.
-echo   pre-installing av binary wheel ^(avoids a source build^)...
-python -m pip install --only-binary=av av >NUL
+REM Stage A: install every wheel-having dep from wheels ONLY. --only-binary=:all:
+REM refuses any source build, so pip can't fall back to compiling av against
+REM ffmpeg dev libs the user doesn't have.
+echo   stage A: installing wheel-only deps ^(torch + av + framework^)...
+python -m pip install --only-binary=:all: ^
+    --extra-index-url https://download.pytorch.org/whl/cu121 ^
+    torch==2.3.1 torchaudio==2.3.1 ^
+    "av>=14.0.0,<15" ^
+    numpy cython setuptools wheel ^
+    fastapi==0.115.5 "uvicorn[standard]==0.32.1" httpx==0.27.2 ^
+    python-multipart==0.0.12 pydantic==2.9.2 pydantic-settings==2.6.1 ^
+    yt-dlp==2024.11.18 mutagen==1.47.0 Pillow==11.0.0
 if errorlevel 1 (
-    echo av wheel pre-install failed.
+    echo.
+    echo Stage A FAILED ^(wheel install^). See errors above.
     call .venv\Scripts\deactivate.bat
     popd & pause & exit /b 1
 )
 
-echo   installing worker + torch ^(cu121^) - go grab a coffee, ~5-15 min...
-python -m pip install -e . --extra-index-url https://download.pytorch.org/whl/cu121 --prefer-binary
+REM Stage B: install demucs + whisperx. They're sdist-only on PyPI; pip
+REM builds local wheels but their setup.py is pure Python (no compiler
+REM needed). --no-build-isolation reuses the venv's installed packages
+REM (notably the av wheel from Stage A) instead of re-resolving in an
+REM isolated env, which was what triggered the av source build.
+echo   stage B: installing demucs + whisperx ^(pure-python wheel builds^)...
+python -m pip install --no-build-isolation --prefer-binary ^
+    demucs==4.0.1 whisperx==3.1.5
+if errorlevel 1 (
+    echo.
+    echo Stage B FAILED ^(demucs/whisperx^). See errors above.
+    call .venv\Scripts\deactivate.bat
+    popd & pause & exit /b 1
+)
+
+REM Stage C: install our editable package, skipping dep resolution since
+REM everything is already in the venv.
+echo   stage C: installing djclaude-worker ^(editable, no deps^)...
+python -m pip install -e . --no-deps
 if errorlevel 1 (
     echo.
     echo Worker install FAILED.

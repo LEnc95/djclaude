@@ -23,6 +23,10 @@ dependencies = [
     # faster-whisper is pulled in transitively by whisperx; let whisperx
     # decide the exact pin (3.1.5 wants ==1.0.1; pinning it ourselves
     # makes pip refuse to resolve).
+    # av (PyAV) is pulled in transitively. Pin to a range that has cp311
+    # Windows wheels so pip never tries to build it from source against
+    # ffmpeg dev libs (which Windows users don't have).
+    "av>=14.0.0,<15",
 
     "yt-dlp==2024.11.18",
     "mutagen==1.47.0",
