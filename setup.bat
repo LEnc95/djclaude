@@ -167,7 +167,7 @@ echo   stage A: installing core wheels ^(torch + faster-whisper + framework^)...
 python -m pip install --only-binary=:all: ^
     --extra-index-url https://download.pytorch.org/whl/cu121 ^
     torch==2.3.1 torchaudio==2.3.1 ^
-    numpy cython setuptools wheel ^
+    "numpy<2" cython setuptools wheel ^
     fastapi==0.115.5 "uvicorn[standard]==0.32.1" httpx==0.27.2 ^
     python-multipart==0.0.12 pydantic==2.9.2 pydantic-settings==2.6.1 ^
     "yt-dlp>=2024.11.18" mutagen==1.47.0 Pillow==11.0.0 ^
@@ -179,17 +179,15 @@ if errorlevel 1 (
     popd & pause & exit /b 1
 )
 
-REM Stage B: demucs's runtime Python deps. Pre-install the safe ones
-REM (julius, einops, etc.) but SKIP openunmix — that's the transitive dep
-REM that pulls in PyAV. Demucs works without openunmix at inference time.
-REM
-REM IMPORTANT: --prefer-binary, NOT --only-binary=:all:. julius is pure
-REM Python and ships sdist-only on PyPI (no wheel needed — no compilation).
-REM --only-binary=:all: would reject it with "from versions: none".
-echo   stage B: installing demucs runtime deps ^(skipping openunmix/PyAV^)...
+REM Stage B: demucs's runtime Python deps. openunmix IS required (demucs's
+REM hdemucs imports it at module load); luckily it doesn't actually pull
+REM PyAV — that was a different transitive chain. Install everything with
+REM --prefer-binary so pure-Python sdists (julius) install fine while
+REM compiled packages prefer wheels.
+echo   stage B: installing demucs runtime deps...
 python -m pip install --prefer-binary ^
     julius einops pyyaml tqdm omegaconf diffq dora-search ^
-    lameenc
+    openunmix lameenc
 if errorlevel 1 (
     echo.
     echo Stage B FAILED ^(demucs deps^). See errors above.

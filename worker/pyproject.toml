@@ -22,6 +22,9 @@ dependencies = [
 
     "torch==2.3.1",
     "torchaudio==2.3.1",
+    # Torch 2.3.x was compiled against NumPy 1.x — NumPy 2 breaks demucs +
+    # torchaudio at import time with "_ARRAY_API not found". Pin <2.
+    "numpy<2",
 
     # Whisper inference + word-level timestamps in one package, all wheels.
     "faster-whisper>=1.0.3,<2",
