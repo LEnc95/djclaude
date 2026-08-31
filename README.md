@@ -97,6 +97,14 @@ Override with `STATIC_DIR`.
 | `AUTO_ACCEPT` | `true` | new requests go straight into the queue |
 | `YOUTUBE_API_KEY` | _(unused in v1)_ | reserved for future search |
 
+Frontend-only build variables:
+
+| Var | Default | Purpose |
+|---|---|---|
+| `VITE_API_BASE` | _(same origin)_ | API/WebSocket origin for split frontend/API deploys |
+| `VITE_DJ_TIP_URL` | _(hidden)_ | Shows a "Tip the DJ" support link for guests |
+| `VITE_DEVELOPER_DONATE_URL` | _(hidden)_ | Shows a "Donate to developer" support link |
+
 ## Creating an event
 
 For v1 the simplest path is the built-in landing page (`/`), but you can

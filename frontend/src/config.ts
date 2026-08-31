@@ -10,6 +10,11 @@
 const raw = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
 export const API_BASE = raw.replace(/\/+$/, "");
 
+export const DJ_TIP_URL = ((import.meta.env.VITE_DJ_TIP_URL as string | undefined) ?? "").trim();
+export const DEVELOPER_DONATE_URL = (
+  (import.meta.env.VITE_DEVELOPER_DONATE_URL as string | undefined) ?? ""
+).trim();
+
 // WS URL prefix derived from API_BASE. Falls back to the current page origin
 // converted to ws/wss for same-origin deploys.
 export function wsURL(path: string): string {

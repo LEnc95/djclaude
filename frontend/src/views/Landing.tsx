@@ -6,6 +6,7 @@ import { TopBar } from "../components/TopBar";
 import { Icon } from "../components/Icon";
 import { RequestQRCode } from "../components/RequestQRCode";
 import { SEO } from "../components/SEO";
+import { DonationLinks } from "../components/DonationLinks";
 
 export function Landing() {
   const [name, setName] = useState("Friday Karaoke");
@@ -129,6 +130,7 @@ export function Landing() {
                 After you create an event you'll get a guest link to print on the QR
                 and a host link for the dashboard.
               </p>
+              <DonationLinks compact />
             </>
           )}
         </div>
@@ -192,6 +194,7 @@ function CreatedPanel({ ev }: { ev: KaraokeEvent }) {
         venueName={ev.venue_name}
         code={ev.code}
       />
+      <DonationLinks />
 
       <UrlField label="Guest link" url={guestURL} accent="tertiary" />
       <UrlField label="Host link · keep this secret" url={hostURL} accent="primary" />

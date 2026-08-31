@@ -6,6 +6,7 @@ import { AuraBackground } from "../components/AuraBackground";
 import { TopBar } from "../components/TopBar";
 import { Icon } from "../components/Icon";
 import { SEO } from "../components/SEO";
+import { DonationLinks } from "../components/DonationLinks";
 
 interface Props {
   code: string;
@@ -286,6 +287,8 @@ export function Guest({ code }: Props) {
             </ul>
           </section>
         )}
+
+        <DonationLinks />
       </main>
     </div>
   );
